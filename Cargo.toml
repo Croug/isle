@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "isle_ecs",
+    "isle_engine",
+]
+
+resolver = "2"
