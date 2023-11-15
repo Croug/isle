@@ -1,18 +1,29 @@
 use std::marker::PhantomData;
 use super::world::World;
+use isle_engine::Scheduler;
 
 pub struct ECS {
-    systems: Vec<Box<dyn System>>
+    systems: Vec<Box<dyn System>>,
+    world: World,
 }
 
 impl ECS {
     pub fn new() -> Self {
         Self {
             systems: Vec::new(),
+            world: World::new(),
         }
     }
     pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
         self.systems.push(Box::new(system.into_system()));
+    }
+}
+
+impl Scheduler for ECS {
+    fn spin(&mut self) -> () {
+        for system in self.systems.iter_mut() {
+            system.run(&mut self.world)
+        }
     }
 }
 
@@ -26,7 +37,7 @@ pub trait IntoSystem<Input> {
     fn into_system(self) -> Self::System;
 }
 
-trait SystemParam {
+pub trait SystemParam {
     fn from_world(world: &mut World) -> Self;
 }
 
