@@ -3,6 +3,7 @@
 members = [
     "isle_ecs",
     "isle_engine",
+    "isle_editor",
 ]
 
 resolver = "2"

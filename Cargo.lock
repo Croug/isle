@@ -10,5 +10,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "isle_editor"
+version = "0.1.0"
+dependencies = [
+ "isle_ecs",
+ "isle_engine",
+]
+
+[[package]]
 name = "isle_engine"
 version = "0.1.0"

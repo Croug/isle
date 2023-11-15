@@ -9,12 +9,14 @@ use super::component::Component;
 
 pub struct World {
     components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,
+    resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl World {
     pub fn new() -> Self {
         Self {
-            components: HashMap::new()
+            components: HashMap::new(),
+            resources: HashMap::new(),
         }
     }
     pub fn store_component<T: Component>(&mut self, entity: Entity, component: T){
