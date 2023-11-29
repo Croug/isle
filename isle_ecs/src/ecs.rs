@@ -82,6 +82,10 @@ impl_system!(T1);
 impl_system!(T1, T2);
 impl_system!(T1, T2, T3);
 impl_system!(T1, T2, T3, T4);
+impl_system!(T1, T2, T3, T4, T5);
+impl_system!(T1, T2, T3, T4, T5, T6);
+impl_system!(T1, T2, T3, T4, T5, T6, T7);
+impl_system!(T1, T2, T3, T4, T5, T6, T7, T8);
 
 macro_rules! impl_into_system {
     (
@@ -108,4 +112,8 @@ impl_into_system!(T1);
 impl_into_system!(T1, T2);
 impl_into_system!(T1, T2, T3);
 impl_into_system!(T1, T2, T3, T4);
+impl_into_system!(T1, T2, T3, T4, T5);
+impl_into_system!(T1, T2, T3, T4, T5, T6);
+impl_into_system!(T1, T2, T3, T4, T5, T6, T7);
+impl_into_system!(T1, T2, T3, T4, T5, T6, T7, T8);
 

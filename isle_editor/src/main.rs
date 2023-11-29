@@ -6,10 +6,16 @@ use isle_ecs::{
         SystemParam,
     },
     world::World,
+    query::{Query, With, Without}, component::Component
 };
 use isle_engine::Scheduler;
 
 struct MyResource(pub usize);
+
+struct MyComponentOne;
+struct MyComponentTwo;
+struct MyComponentThree;
+struct MyComponentFour;
 
 impl SystemParam for MyResource {
     fn from_world(world: &mut World) -> Self {
@@ -23,6 +29,12 @@ fn main() {
     ecs.spin();
 }
 
-fn my_system(res: MyResource) {
+fn my_system<'a>(
+    res: MyResource,
+    query: Query<'a,
+        (&'a mut MyComponentOne, &'a MyComponentTwo),
+        (With<MyComponentThree>, Without<MyComponentFour>)
+    >
+) {
     println!("Res is {}", res.0);
 }
