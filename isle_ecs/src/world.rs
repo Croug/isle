@@ -10,8 +10,8 @@ use isle_engine::entity::Entity;
 use super::component::Component;
 
 pub struct World {
-    components: HashMap<TypeId, HashMap<Entity, RefCell<Box<dyn Any>>>>,
-    resources: HashMap<TypeId, RefCell<Box<dyn Any>>>,
+    components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,
+    resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl World {
@@ -23,20 +23,18 @@ impl World {
     }
 
     pub fn store_resource<T: 'static>(&mut self, resource: T){
-        self.resources.insert(TypeId::of::<T>(), RefCell::new(Box::new(resource)));
+        self.resources.insert(TypeId::of::<T>(), Box::new(resource));
     }
 
     pub fn get_resource<T: 'static>(&self) -> Option<&T>{
         self.resources
             .get(&TypeId::of::<T>())?
-            .borrow()
             .downcast_ref::<T>()
     }
 
-    pub unsafe fn get_resource_mut<T: 'static>(&self) -> Option<&mut T>{
+    pub unsafe fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T>{
         self.resources
-            .get(&TypeId::of::<T>())?
-            .borrow_mut()
+            .get_many_unchecked_mut([&TypeId::of::<T>()])?[0]
             .downcast_mut::<T>()
     }
 
@@ -44,22 +42,23 @@ impl World {
         self.components
             .entry(TypeId::of::<T>())
             .or_insert(HashMap::new())
-            .insert(entity, RefCell::new(Box::new(component)));
+            .insert(entity, Box::new(component));
     }
 
     pub fn get_component<T: Component>(&self, entity: &Entity) -> Option<&T>{
         self.components
             .get(&TypeId::of::<T>())?
             .get(entity)?
-            .borrow()
             .downcast_ref::<T>()
     }
 
-    pub unsafe fn get_component_mut<T: Component>(&mut self, entity: &Entity) -> Option<&mut T>{
+    /// # Safety
+    /// This function must only be called in a single threaded environment or
+    /// from within a scheduled context.
+    pub unsafe fn get_component_mut<T: Component + 'static>(&mut self, entity: &Entity) -> Option<&mut T>{
         self.components
-            .get(&TypeId::of::<T>())?
-            .get(entity)?
-            .borrow_mut()
+            .get_mut(&TypeId::of::<T>())?
+            .get_many_unchecked_mut([entity])?[0]
             .downcast_mut::<T>()
     }
 }

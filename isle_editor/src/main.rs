@@ -18,7 +18,7 @@ struct MyComponentThree;
 struct MyComponentFour;
 
 impl SystemParam for MyResource {
-    fn from_world(world: &mut World) -> Self {
+    fn from_world(_world: &mut World) -> Self {
         Self(42)
     }
 }
@@ -29,10 +29,10 @@ fn main() {
     ecs.spin();
 }
 
-fn my_system<'a>(
+fn my_system(
     res: MyResource,
-    query: Query<'a,
-        (&'a mut MyComponentOne, &'a MyComponentTwo),
+    _query: Query<
+        (&'static mut MyComponentOne, &'static MyComponentTwo),
         (With<MyComponentThree>, Without<MyComponentFour>)
     >
 ) {
