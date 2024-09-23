@@ -38,7 +38,9 @@ pub trait IntoSystem<Input> {
 }
 
 pub trait SystemParam {
-    fn from_world(world: &mut World) -> Self;
+    type Item<'new>;
+
+    fn from_world<'w>(world: &'w mut World) -> Self::Item<'w>;
 }
 
 pub struct StoredSystem<Input, F> {
@@ -46,32 +48,70 @@ pub struct StoredSystem<Input, F> {
     marker: PhantomData<fn() -> Input>,
 }
 
-macro_rules! impl_system {
+macro_rules! impl_system_param {
     (
         $(
             $($params:ident),+
-         )?
+        )?
     ) => {
         #[allow(non_snake_case, unused)]
-        impl<
-            F: FnMut(
-                $( $($params),+ )?
-            )
-            $(, $($params: 'static),+ )?
-        > System for StoredSystem<($( $($params,)+ )?), F>
-        where
-            $($(
-                $params: SystemParam
-            ),+)?
+        impl<$($($params),+)?> SystemParam for ($($($params),+)?)
+        where $($(
+            for<'a> $params: SystemParam<Item<'a>=$params>
+        ),+)?
         {
-            fn run(&mut self, world: &mut World) {
+            type Item<'new> = ($($($params::Item<'new>),+)?);
+
+            fn from_world<'w>(world: &'w mut World) -> Self::Item<'w> {
                 $($(
-                    let $params = $params::from_world(world);
+                    let $params = {
+                        let world: &mut World = unsafe { &mut *(world as *mut World) };
+                        $params::from_world(world)
+                    };
                 )+)?
 
-                (self.f)(
-                    $($($params),+)?
-                );
+                ($($($params),+)?)
+            }
+        }
+    }
+}
+
+impl_system_param!();
+impl_system_param!(T1, T2);
+impl_system_param!(T1, T2, T3);
+impl_system_param!(T1, T2, T3, T4);
+impl_system_param!(T1, T2, T3, T4, T5);
+impl_system_param!(T1, T2, T3, T4, T5, T6);
+impl_system_param!(T1, T2, T3, T4, T5, T6, T7);
+impl_system_param!(T1, T2, T3, T4, T5, T6, T7, T8);
+
+macro_rules! impl_system {
+    (
+        $($params:ident),*
+    ) => {
+        #[allow(non_snake_case, unused)]
+        impl<F, $($params: SystemParam),*> System for StoredSystem<($($params,)*), F>
+        where
+            for<'a, 'b> &'a mut F:
+                FnMut( $($params),* ) +
+                FnMut( $(<$params as SystemParam>::Item<'b>),* )
+        {
+            fn run(&mut self, world: &mut World) {
+                fn call_inner<$($params),*>(
+                    mut f: impl FnMut($($params),*),
+                    $($params: $params),*
+                ) {
+                    f($($params),*);
+                }
+
+                $(
+                    let $params = {
+                        let world: &mut World = unsafe { &mut *(world as *mut World) };
+                        $params::from_world(world)
+                    };
+                )*
+
+                call_inner(&mut self.f, $($params),*);
             }
         }
     }
@@ -89,13 +129,15 @@ impl_system!(T1, T2, T3, T4, T5, T6, T7, T8);
 
 macro_rules! impl_into_system {
     (
-        $($($params:ident),+)?
+        $($params:ident),*
     ) => {
-        impl<F: FnMut($($($params),+)?) $(, $($params: 'static),+ )?> IntoSystem<( $($($params,)+)?)> for F
+        impl<F, $($params: SystemParam),*> IntoSystem<($($params,)*)> for F
         where
-            $($($params: SystemParam),+)?
+            for<'a, 'b> &'a mut F:
+                FnMut( $($params),* ) +
+                FnMut( $(<$params as SystemParam>::Item<'b>),* )
         {
-            type System = StoredSystem<( $($($params,)+)? ), Self>;
+            type System = StoredSystem<($($params,)*), Self>;
 
             fn into_system(self) -> Self::System {
                 StoredSystem {

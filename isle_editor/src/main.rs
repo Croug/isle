@@ -18,8 +18,18 @@ struct MyComponentThree;
 struct MyComponentFour;
 
 impl SystemParam for MyResource {
+    type Item<'new> = Self;
+
     fn from_world(_world: &mut World) -> Self {
         Self(42)
+    }
+}
+
+impl SystemParam for &MyResource {
+    type Item<'new> = &'new MyResource;
+
+    fn from_world(_world: &mut World) -> Self::Item<'_> {
+        &MyResource(42)
     }
 }
 
@@ -29,12 +39,12 @@ fn main() {
     ecs.spin();
 }
 
-fn my_system(
-    res: MyResource,
+fn my_system<'a>(
+    // res: &MyResource,
     _query: Query<
-        (&'static mut MyComponentOne, &'static MyComponentTwo),
+        (&MyComponentOne, &MyComponentTwo),
         (With<MyComponentThree>, Without<MyComponentFour>)
     >
 ) {
-    println!("Res is {}", res.0);
+    // println!("Res is {}", res.0);
 }

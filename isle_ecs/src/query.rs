@@ -21,19 +21,34 @@ impl RefType {
     }
 }
 
-pub struct Query<T, V = ()> 
+pub struct Query<'w, T, V = ()> 
 where
-    T: QueryParam<'static>,
+    T: QueryParam,
     V: ReadOnlyQueryParam,
 {
-    marker: PhantomData<(T, V)>,
+    marker: PhantomData<&'w (T, V)>,
+}
+
+impl<T, V> SystemParam for Query<'_, T, V>
+where
+    T: QueryParam + 'static,
+    V: ReadOnlyQueryParam + 'static,
+{
+    type Item<'new> = Query<'new, T, V>;
+    fn from_world<'w>(_world: &'w mut World) -> Self::Item<'w> {
+        Query::<'w, T, V> {
+            marker: PhantomData::<&'w (T,V)>,
+        }
+    }
 }
 
 pub struct With<T>(PhantomData<T>);
 pub struct Without<T>(PhantomData<T>);
 
-pub trait QueryParam<'a> {
-    fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized;
+pub trait QueryParam {
+    type Item<'new>;
+
+    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>;
     fn get_components() -> Vec<(TypeId, RefType)>;
 }
 
@@ -53,8 +68,10 @@ impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
     }
 }
 
-impl<'a, T: Component + 'static> QueryParam<'a> for &'a T {
-    fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized
+impl<T: Component> QueryParam for &T
+{
+    type Item<'new> = &'new T;
+    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
     {
         unsafe { world.get_component_mut::<T>(entity).unwrap() }
     }
@@ -63,8 +80,9 @@ impl<'a, T: Component + 'static> QueryParam<'a> for &'a T {
     }
 }
 
-impl<'a, T: Component + 'static> QueryParam<'a> for &'a mut T {
-    fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized
+impl<T: Component> QueryParam for &mut T {
+    type Item<'new> = &'new mut T;
+    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
     {
         let comp = unsafe { world.get_component_mut::<T>(entity).unwrap() };
 
@@ -75,8 +93,9 @@ impl<'a, T: Component + 'static> QueryParam<'a> for &'a mut T {
     }
 }
 
-impl<'a, T: Component + 'static> QueryParam<'a> for Option<&'a T> {
-    fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized
+impl<T: Component> QueryParam for Option<&T> {
+    type Item<'new> = Option<&'new T>;
+    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
     {
         world.get_component::<T>(entity)
     }
@@ -85,25 +104,14 @@ impl<'a, T: Component + 'static> QueryParam<'a> for Option<&'a T> {
     }
 }
 
-impl<'a, T: Component + 'static> QueryParam<'a> for Option<&'a mut T> {
-    fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized
+impl<T: Component> QueryParam for Option<&mut T> {
+    type Item<'new> = Option<&'new mut T>;
+    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
     {
         unsafe { world.get_component_mut::<T>(entity) }
     }
     fn get_components() -> Vec<(TypeId, RefType)> {
         vec![(TypeId::of::<T>(), RefType::OptionalMutable)]
-    }
-}
-
-impl<T, V> SystemParam for Query<T, V>
-where
-    T: QueryParam<'static>,
-    V: ReadOnlyQueryParam,
-{
-    fn from_world(_world: &mut World) -> Self {
-        Self {
-            marker: PhantomData,
-        }
     }
 }
 
@@ -114,10 +122,15 @@ macro_rules! impl_query_param {
         ),+)?
     ) => {
         #[allow(non_snake_case, unused)]
-        impl<'a,
-            $($($params: QueryParam<'a>),+)?
-        > QueryParam<'a> for ($($($params),+)?) {
-            fn from_world(entity: &Entity, world: &'a mut World) -> Self where Self: Sized {
+        impl<
+            $($($params: QueryParam),+)?
+        > QueryParam for ($($($params),+)?)
+        where $($(
+            for<'a> $params: QueryParam<Item<'a>=$params>,
+        )+)?
+        {
+            type Item<'new> = ($($($params::Item<'new>),+)?);
+            fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w> {
                 let world: *mut World = world;
                 unsafe { ($($($params::from_world(entity, &mut *world)),+)?) }
             }
