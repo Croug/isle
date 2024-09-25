@@ -4,5 +4,5 @@ pub mod entity {
 }
 
 pub trait Scheduler {
-    fn spin(&mut self) -> ();
+    fn spin(&mut self);
 }

@@ -1,25 +1,8 @@
-use std::{marker::PhantomData, any::TypeId};
+use std::{any::TypeId, collections::HashSet, marker::PhantomData};
 
-use isle_engine::entity::Entity;
-
-use crate::{ecs::SystemParam, world::World, component::Component};
-
-pub enum RefType {
-    Immutable,
-    Mutable,
-    OptionalImmutable,
-    OptionalMutable,
-}
-
-impl RefType {
-    pub fn make_optional(self) -> Self {
-        match self {
-            Self::Immutable => Self::OptionalImmutable,
-            Self::Mutable => Self::OptionalMutable,
-            _ => self,
-        }
-    }
-}
+use crate::{component::Component, ecs::{
+    RefType, SystemParam, TypeSet
+}, world::World};
 
 pub struct Query<T, V = ()> 
 where
@@ -31,14 +14,20 @@ where
 
 impl<T, V> SystemParam for Query<T, V>
 where
-    T: QueryParam,
-    V: ReadOnlyQueryParam,
+    T: QueryParam + 'static,
+    V: ReadOnlyQueryParam + 'static,
 {
     type Item<'new> = Query<T, V>;
     fn from_world<'w>(_world: &'w mut World) -> Self::Item<'w> {
         Query::<T, V> {
             marker: PhantomData::<(T,V)>,
         }
+    }
+    fn collect_types(types: &mut impl crate::ecs::TypeSet) -> () {
+        let mut _set = HashSet::<(TypeId, RefType)>::new();
+        T::get_components(&mut _set);
+        V::get_components(&mut _set);
+        types.insert_type::<Query<T,V>>(RefType::Immutable);
     }
 }
 
@@ -49,37 +38,55 @@ pub trait QueryParam {
     type Readonly<'new>;
 
     // fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Readonly<'w>;
-    fn get_components() -> Vec<(TypeId, RefType)>;
+    fn get_components(type_set: &mut impl TypeSet) -> ();
 }
 
 pub trait ReadOnlyQueryParam {
-    fn get_components() -> Vec<(TypeId, RefType)>;
+    fn get_components(type_set: &mut impl TypeSet) -> ();
 }
 
 impl<T: Component + 'static> ReadOnlyQueryParam for With<T> {
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::Immutable)]
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::Present);
     }
 }
 
 impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::Immutable)]
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::Absent);
     }
 }
 
 impl<T: Component + 'static> QueryParam for &T
 {
     type Readonly<'new> = &'new T;
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::Immutable)]
+        
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::Immutable);
     }
 }
 
 impl<T: Component + 'static> QueryParam for &mut T {
     type Readonly<'new> = &'new T;
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::Mutable)]
+
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::Mutable);
+    }
+}
+
+impl<T: Component + 'static> QueryParam for Option<&T> {
+    type Readonly<'new> = Option<&'new T>;
+
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::OptionalImmutable);
+    }
+}
+
+impl<T: Component + 'static> QueryParam for Option<&mut T> {
+    type Readonly<'new> = Option<&'new T>;
+
+    fn get_components(type_set: &mut impl TypeSet) -> () {
+        type_set.insert_type::<T>(RefType::OptionalMutable);
     }
 }
 
@@ -99,12 +106,10 @@ macro_rules! impl_query_param {
             //     let world: *mut World = world;
             //     unsafe { ($($($params::from_world(entity, &mut *world)),+)?) }
             // }
-            fn get_components() -> Vec<(TypeId, RefType)> {
-                let mut components = Vec::new();
+            fn get_components(type_set: &mut impl TypeSet) {
                 $($(
-                    components.extend($params::get_components());
+                    $params::get_components(type_set);
                 )+)?
-                components
             }
         }
     }
@@ -127,12 +132,10 @@ macro_rules! impl_read_only_query_param {
     ) => {
         #[allow(non_snake_case, unused)]
         impl<$($($params: ReadOnlyQueryParam),+)?> ReadOnlyQueryParam for ($($($params),+)?) {
-            fn get_components() -> Vec<(TypeId, RefType)> {
-                let mut components = Vec::new();
+            fn get_components(type_set: &mut impl TypeSet) {
                 $($(
-                    components.extend($params::get_components());
+                    $params::get_components(type_set);
                 )+)?
-                components
             }
         }
     }

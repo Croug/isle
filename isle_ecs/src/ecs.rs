@@ -1,6 +1,27 @@
-use std::marker::PhantomData;
+use std::{any::{type_name, TypeId}, collections::HashSet, marker::PhantomData};
+
 use super::world::World;
 use isle_engine::Scheduler;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RefType {
+    Immutable,
+    Mutable,
+    OptionalImmutable,
+    OptionalMutable,
+    Present,
+    Absent,
+}
+
+impl RefType {
+    pub fn make_optional(self) -> Self {
+        match self {
+            Self::Immutable => Self::OptionalImmutable,
+            Self::Mutable => Self::OptionalMutable,
+            _ => self,
+        }
+    }
+}
 
 pub struct ECS {
     systems: Vec<Box<dyn System>>,
@@ -20,7 +41,7 @@ impl ECS {
 }
 
 impl Scheduler for ECS {
-    fn spin(&mut self) -> () {
+    fn spin(&mut self) {
         for system in self.systems.iter_mut() {
             system.run(&mut self.world)
         }
@@ -29,6 +50,19 @@ impl Scheduler for ECS {
 
 pub trait System {
     fn run(&mut self, world: &mut World);
+}
+
+pub trait TypeSet {
+    fn insert_type<T: 'static>(&mut self, ref_type: RefType);
+}
+
+impl TypeSet for HashSet<(TypeId, RefType)> {
+    fn insert_type<T: 'static>(&mut self, ref_type: RefType) {
+        let type_id = TypeId::of::<T>();
+        if !self.insert((type_id, ref_type)) {
+            panic!("Duplicte type in dependency list\nType {} appears at least twice", type_name::<T>());
+        }
+    }
 }
 
 pub trait IntoSystem<Input> {
@@ -41,6 +75,7 @@ pub trait SystemParam {
     type Item<'new>;
 
     fn from_world<'w>(world: &'w mut World) -> Self::Item<'w>;
+    fn collect_types(types: &mut impl TypeSet);
 }
 
 pub struct StoredSystem<Input, F> {
@@ -71,6 +106,12 @@ macro_rules! impl_system_param {
                 )+)?
 
                 ($($($params),+)?)
+            }
+
+            fn collect_types(types: &mut impl TypeSet) {
+                $($(
+                    $params::collect_types(types);
+                )+)?
             }
         }
     }
@@ -140,6 +181,8 @@ macro_rules! impl_into_system {
             type System = StoredSystem<($($params,)*), Self>;
 
             fn into_system(self) -> Self::System {
+                let mut _set = HashSet::<(TypeId, RefType)>::new();
+                $($params::collect_types(&mut _set);)*
                 StoredSystem {
                     f: self,
                     marker: Default::default(),
