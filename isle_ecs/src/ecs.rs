@@ -23,6 +23,21 @@ impl RefType {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq)]
+pub struct BorrowSignature(pub TypeId, pub RefType);
+
+impl PartialEq for BorrowSignature {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl std::hash::Hash for BorrowSignature {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
 pub struct ECS {
     systems: Vec<Box<dyn System>>,
     world: World,
@@ -56,10 +71,10 @@ pub trait TypeSet {
     fn insert_type<T: 'static>(&mut self, ref_type: RefType);
 }
 
-impl TypeSet for HashSet<(TypeId, RefType)> {
+impl TypeSet for HashSet<BorrowSignature> {
     fn insert_type<T: 'static>(&mut self, ref_type: RefType) {
         let type_id = TypeId::of::<T>();
-        if !self.insert((type_id, ref_type)) {
+        if !self.insert(BorrowSignature(type_id, ref_type)) {
             panic!("Duplicte type in dependency list\nType {} appears at least twice", type_name::<T>());
         }
     }
@@ -181,7 +196,7 @@ macro_rules! impl_into_system {
             type System = StoredSystem<($($params,)*), Self>;
 
             fn into_system(self) -> Self::System {
-                let mut _set = HashSet::<(TypeId, RefType)>::new();
+                let mut _set = HashSet::<BorrowSignature>::new();
                 $($params::collect_types(&mut _set);)*
                 StoredSystem {
                     f: self,

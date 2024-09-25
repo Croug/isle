@@ -1,7 +1,7 @@
-use std::{any::TypeId, collections::HashSet, marker::PhantomData};
+use std::{collections::HashSet, marker::PhantomData};
 
 use crate::{component::Component, ecs::{
-    RefType, SystemParam, TypeSet
+    BorrowSignature, RefType, SystemParam, TypeSet
 }, world::World};
 
 pub struct Query<T, V = ()> 
@@ -24,7 +24,7 @@ where
         }
     }
     fn collect_types(types: &mut impl crate::ecs::TypeSet) -> () {
-        let mut _set = HashSet::<(TypeId, RefType)>::new();
+        let mut _set = HashSet::<BorrowSignature>::new();
         T::get_components(&mut _set);
         V::get_components(&mut _set);
         types.insert_type::<Query<T,V>>(RefType::Immutable);
