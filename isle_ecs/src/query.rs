@@ -21,23 +21,23 @@ impl RefType {
     }
 }
 
-pub struct Query<'w, T, V = ()> 
+pub struct Query<T, V = ()> 
 where
     T: QueryParam,
     V: ReadOnlyQueryParam,
 {
-    marker: PhantomData<&'w (T, V)>,
+    marker: PhantomData<(T, V)>,
 }
 
-impl<T, V> SystemParam for Query<'_, T, V>
+impl<T, V> SystemParam for Query<T, V>
 where
-    T: QueryParam + 'static,
-    V: ReadOnlyQueryParam + 'static,
+    T: QueryParam,
+    V: ReadOnlyQueryParam,
 {
-    type Item<'new> = Query<'new, T, V>;
+    type Item<'new> = Query<T, V>;
     fn from_world<'w>(_world: &'w mut World) -> Self::Item<'w> {
-        Query::<'w, T, V> {
-            marker: PhantomData::<&'w (T,V)>,
+        Query::<T, V> {
+            marker: PhantomData::<(T,V)>,
         }
     }
 }
@@ -46,9 +46,9 @@ pub struct With<T>(PhantomData<T>);
 pub struct Without<T>(PhantomData<T>);
 
 pub trait QueryParam {
-    type Item<'new>;
+    type Readonly<'new>;
 
-    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>;
+    // fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Readonly<'w>;
     fn get_components() -> Vec<(TypeId, RefType)>;
 }
 
@@ -68,50 +68,18 @@ impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
     }
 }
 
-impl<T: Component> QueryParam for &T
+impl<T: Component + 'static> QueryParam for &T
 {
-    type Item<'new> = &'new T;
-    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
-    {
-        unsafe { world.get_component_mut::<T>(entity).unwrap() }
-    }
+    type Readonly<'new> = &'new T;
     fn get_components() -> Vec<(TypeId, RefType)> {
         vec![(TypeId::of::<T>(), RefType::Immutable)]
     }
 }
 
-impl<T: Component> QueryParam for &mut T {
-    type Item<'new> = &'new mut T;
-    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
-    {
-        let comp = unsafe { world.get_component_mut::<T>(entity).unwrap() };
-
-        &mut *comp
-    }
+impl<T: Component + 'static> QueryParam for &mut T {
+    type Readonly<'new> = &'new T;
     fn get_components() -> Vec<(TypeId, RefType)> {
         vec![(TypeId::of::<T>(), RefType::Mutable)]
-    }
-}
-
-impl<T: Component> QueryParam for Option<&T> {
-    type Item<'new> = Option<&'new T>;
-    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
-    {
-        world.get_component::<T>(entity)
-    }
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::OptionalImmutable)]
-    }
-}
-
-impl<T: Component> QueryParam for Option<&mut T> {
-    type Item<'new> = Option<&'new mut T>;
-    fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w>
-    {
-        unsafe { world.get_component_mut::<T>(entity) }
-    }
-    fn get_components() -> Vec<(TypeId, RefType)> {
-        vec![(TypeId::of::<T>(), RefType::OptionalMutable)]
     }
 }
 
@@ -125,15 +93,12 @@ macro_rules! impl_query_param {
         impl<
             $($($params: QueryParam),+)?
         > QueryParam for ($($($params),+)?)
-        where $($(
-            for<'a> $params: QueryParam<Item<'a>=$params>,
-        )+)?
         {
-            type Item<'new> = ($($($params::Item<'new>),+)?);
-            fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w> {
-                let world: *mut World = world;
-                unsafe { ($($($params::from_world(entity, &mut *world)),+)?) }
-            }
+            type Readonly<'new> = ($($($params::Readonly<'new>),+)?);
+            // fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w> {
+            //     let world: *mut World = world;
+            //     unsafe { ($($($params::from_world(entity, &mut *world)),+)?) }
+            // }
             fn get_components() -> Vec<(TypeId, RefType)> {
                 let mut components = Vec::new();
                 $($(

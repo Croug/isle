@@ -35,16 +35,28 @@ impl SystemParam for &MyResource {
 
 fn main() {
     let mut ecs = ECS::new();
-    ecs.add_system(my_system);
+    ecs.add_system(my_resource_system);
+    ecs.add_system(my_query_system);
+    ecs.add_system(my_complete_system);
     ecs.spin();
 }
 
-fn my_system<'a>(
-    // res: &MyResource,
-    _query: Query<
-        (&MyComponentOne, &MyComponentTwo),
-        (With<MyComponentThree>, Without<MyComponentFour>)
-    >
+fn my_complete_system(
+    res: &MyResource,
+    query: Query< (&MyComponentOne, &MyComponentFour) >
 ) {
-    // println!("Res is {}", res.0);
+
+}
+
+fn my_resource_system(
+    res: & MyResource,
+    res2: & MyResource,
+) {
+    println!("Res is {}\nRes2 is {}", res.0, res2.0);
+}
+
+fn my_query_system(
+    _query: Query< (&MyComponentOne, &MyComponentFour) >
+) {
+
 }
