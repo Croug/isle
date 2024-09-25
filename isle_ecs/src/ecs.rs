@@ -105,7 +105,7 @@ macro_rules! impl_system_param {
         )?
     ) => {
         #[allow(non_snake_case, unused)]
-        impl<$($($params),+)?> SystemParam for ($($($params),+)?)
+        impl<$($($params),+)?> SystemParam for ($($($params,)+)?)
         where $($(
             for<'a> $params: SystemParam<Item<'a>=$params>
         ),+)?
@@ -133,6 +133,7 @@ macro_rules! impl_system_param {
 }
 
 impl_system_param!();
+impl_system_param!(T1);
 impl_system_param!(T1, T2);
 impl_system_param!(T1, T2, T3);
 impl_system_param!(T1, T2, T3, T4);

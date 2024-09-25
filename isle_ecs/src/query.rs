@@ -99,7 +99,7 @@ macro_rules! impl_query_param {
         #[allow(non_snake_case, unused)]
         impl<
             $($($params: QueryParam),+)?
-        > QueryParam for ($($($params),+)?)
+        > QueryParam for ($($($params,)+)?)
         {
             type Readonly<'new> = ($($($params::Readonly<'new>),+)?);
             // fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Item<'w> {
@@ -116,6 +116,7 @@ macro_rules! impl_query_param {
 }
 
 impl_query_param!();
+impl_query_param!(T1);
 impl_query_param!(T1, T2);
 impl_query_param!(T1, T2, T3);
 impl_query_param!(T1, T2, T3, T4);
@@ -131,7 +132,7 @@ macro_rules! impl_read_only_query_param {
         ),+)?
     ) => {
         #[allow(non_snake_case, unused)]
-        impl<$($($params: ReadOnlyQueryParam),+)?> ReadOnlyQueryParam for ($($($params),+)?) {
+        impl<$($($params: ReadOnlyQueryParam),+)?> ReadOnlyQueryParam for ($($($params,)+)?) {
             fn get_components(type_set: &mut impl TypeSet) {
                 $($(
                     $params::get_components(type_set);
@@ -142,6 +143,7 @@ macro_rules! impl_read_only_query_param {
 }
 
 impl_read_only_query_param!();
+impl_read_only_query_param!(T1);
 impl_read_only_query_param!(T1, T2);
 impl_read_only_query_param!(T1, T2, T3);
 impl_read_only_query_param!(T1, T2, T3, T4);
