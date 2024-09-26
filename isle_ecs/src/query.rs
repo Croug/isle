@@ -6,28 +6,6 @@ use crate::{component::Component, ecs::{
     BorrowSignature, RefType, SystemParam, TypeSet
 }, world::World};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum FilterType {
-    With,
-    Without,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct  FilterSignature(TypeId, FilterType);
-
-pub trait FilterSet {
-    fn insert_type<T: 'static>(&mut self, filter_type: FilterType);
-}
-
-impl FilterSet for HashSet<FilterSignature> {
-    fn insert_type<T: 'static>(&mut self, filter_type: FilterType) {
-        let type_id = TypeId::of::<T>();
-        if !self.insert(FilterSignature(type_id, filter_type)) {
-            panic!("Duplicate type in dependency list\nType {} appears at least twice", type_name::<T>());
-        }
-    }
-}
-
 pub struct Query<'w, T, V = ()> 
 where
     T: QueryParam,
@@ -43,14 +21,40 @@ where
     V: ReadOnlyQueryParam,
 {
     pub fn fetch_entities(&self) -> HashSet<Entity> {
-        let entities = HashSet::<Entity>::new();
         let mut interactable_components = HashSet::<BorrowSignature>::new();
-        let mut filter_components = HashSet::<FilterSignature>::new();
+        let mut with_components = HashSet::<BorrowSignature>::new();
+        let mut without_components = HashSet::<BorrowSignature>::new();
 
         T::get_components(&mut interactable_components);
-        V::get_components(&mut filter_components);
+        V::get_components(&mut with_components, &mut without_components);
 
-        todo!()
+        let components: HashSet<TypeId> = interactable_components
+            .union(&with_components)
+            .filter(|BorrowSignature(_, ref_type)| ref_type != &RefType::OptionalImmutable && ref_type != &RefType::OptionalMutable)
+            .copied()
+            .map(|BorrowSignature(type_id, _)| type_id)
+            .collect();
+
+        let without_components: HashSet<TypeId> = without_components
+            .iter()
+            .copied()
+            .map(|BorrowSignature(type_id, _)| type_id)
+            .collect();
+
+        interactable_components
+        .iter()
+        .map(|BorrowSignature(type_id, _)| {
+            let world = unsafe { &mut *self.world.get() };
+            world.get_entities_with_component(type_id)
+        })
+        .flatten()
+        .filter(|entity| {
+            let world = unsafe { &mut *self.world.get() };
+            let entity_components = world.get_entity_components(entity);
+        
+            entity_components.is_superset(&components) && entity_components.is_disjoint(&without_components)
+        })
+        .collect()
     }
     pub fn iter(&self) -> impl Iterator<Item = T::Item<'w>> + '_ {
         let entities = self.fetch_entities();
@@ -75,9 +79,10 @@ where
     }
     fn collect_types(types: &mut impl crate::ecs::TypeSet) -> () {
         let mut _component_set = HashSet::<BorrowSignature>::new();
-        let mut _filter_set = HashSet::<FilterSignature>::new();
+        let mut _filter_set = HashSet::<BorrowSignature>::new();
+
         T::get_components(&mut _component_set);
-        V::get_components(&mut _filter_set);
+        V::get_components(&mut _filter_set, &mut _component_set);
         types.insert_type::<Query<T,V>>(RefType::Immutable);
     }
 }
@@ -94,18 +99,18 @@ pub trait QueryParam {
 }
 
 pub trait ReadOnlyQueryParam {
-    fn get_components(filter_set: &mut impl FilterSet) -> ();
+    fn get_components(with_set: &mut impl TypeSet, without_set: &mut impl TypeSet) -> ();
 }
 
 impl<T: Component + 'static> ReadOnlyQueryParam for With<T> {
-    fn get_components(filter_set: &mut impl FilterSet) -> () {
-        filter_set.insert_type::<T>(FilterType::With);
+    fn get_components(with_set: &mut impl TypeSet, _: &mut impl TypeSet) -> () {
+        with_set.insert_type::<T>(RefType::Immutable);
     }
 }
 
 impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
-    fn get_components(filter_set: &mut impl FilterSet) -> () {
-        filter_set.insert_type::<T>(FilterType::Without);
+    fn get_components(_: &mut impl TypeSet, without_set: &mut impl TypeSet) -> () {
+        without_set.insert_type::<T>(RefType::Immutable);
     }
 }
 
@@ -214,9 +219,9 @@ macro_rules! impl_read_only_query_param {
     ) => {
         #[allow(non_snake_case, unused)]
         impl<$($($params: ReadOnlyQueryParam),+)?> ReadOnlyQueryParam for ($($($params,)+)?) {
-            fn get_components(filter_set: &mut impl FilterSet) {
+            fn get_components(with_set: &mut impl TypeSet, without_set: &mut impl TypeSet) {
                 $($(
-                    $params::get_components(filter_set);
+                    $params::get_components(with_set, without_set);
                 )+)?
             }
         }

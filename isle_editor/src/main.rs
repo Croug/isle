@@ -14,9 +14,16 @@ use isle_engine::Scheduler;
 
 struct MyResource(pub usize);
 
+#[derive(Debug)]
 struct MyComponentOne;
+
+#[derive(Debug)]
 struct MyComponentTwo;
+
+#[derive(Debug)]
+
 struct MyComponentThree;
+#[derive(Debug)]
 struct MyComponentFour;
 
 impl SystemParam for &MyResource {
@@ -33,11 +40,11 @@ impl SystemParam for &MyResource {
 
 fn main() {
     let mut ecs = ECS::new();
+
     ecs.add_system(my_resource_system);
     ecs.add_system(my_query_system);
     ecs.add_system(my_complete_system);
-    // ecs.add_system(my_malformed_query_system);
-    // ecs.add_system(my_malformed_resource_system);
+
     ecs.spin();
 }
 
@@ -45,7 +52,11 @@ fn my_complete_system(
     res: &MyResource,
     query: Query< (&MyComponentOne, &MyComponentFour) >
 ) {
-
+    println!("Res is {}", res.0);
+    for (one, four) in query.iter() {
+        println!("One is {:?}", one);
+        println!("Four is {:?}", four);
+    }
 }
 
 fn my_resource_system(
@@ -56,19 +67,6 @@ fn my_resource_system(
 
 fn my_query_system(
     _query: Query< (&MyComponentOne, &MyComponentFour) >
-) {
-
-}
-
-fn my_malformed_query_system(
-    _query: Query< (&MyComponentOne, &MyComponentOne) >
-) {
-
-}
-
-fn my_malformed_resource_system(
-    res1: & MyResource,
-    res2: & MyResource,
 ) {
 
 }

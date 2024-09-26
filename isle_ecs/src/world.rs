@@ -1,5 +1,5 @@
 use std::{
-    any::{Any, TypeId}, cell::UnsafeCell, hash::{BuildHasher, Hash, Hasher}
+    any::{Any, TypeId}, cell::UnsafeCell, collections::HashSet, hash::{BuildHasher, Hash, Hasher}
 };
 
 use hashbrown::HashMap;
@@ -11,6 +11,7 @@ use super::component::Component;
 pub struct World {
     components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,
     resources: HashMap<TypeId, Box<dyn Any>>,
+    entities: HashMap<Entity, HashSet<TypeId>>,
 }
 
 impl World {
@@ -19,6 +20,7 @@ impl World {
             Self {
                 components: HashMap::new(),
                 resources: HashMap::new(),
+                entities: HashMap::new(),
             }
         )
     }
@@ -44,6 +46,11 @@ impl World {
             .entry(TypeId::of::<T>())
             .or_insert(HashMap::new())
             .insert(entity, Box::new(component));
+
+        self.entities
+            .entry(entity)
+            .or_insert(HashSet::new())
+            .insert(TypeId::of::<T>());
     }
 
     pub fn get_component<T: Component>(&self, entity: &Entity) -> Option<&T>{
@@ -53,8 +60,20 @@ impl World {
             .downcast_ref::<T>()
     }
 
-    pub fn get_entities_with_component(&self, type_id: TypeId) -> Vec<Entity> {
-        todo!()
+    pub fn get_entities_with_component(&self, type_id: &TypeId) -> Vec<Entity> {
+        self.components
+            .get(type_id)
+            .unwrap()
+            .keys()
+            .copied()
+            .collect()
+    }
+
+    pub fn get_entity_components(&self, entity: &Entity) -> HashSet<TypeId> {
+        self.entities
+            .get(entity)
+            .unwrap()
+            .clone()
     }
 
     /// # Safety
