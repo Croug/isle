@@ -3,6 +3,7 @@ use std::{
     cell::UnsafeCell,
     collections::HashSet,
     marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 use crate::component::Component;
@@ -62,6 +63,10 @@ impl ECS {
         let world = unsafe { &mut *self.world.get() };
         world.store_component(entity, component);
     }
+    pub fn add_resource<T: 'static>(&mut self, resource: T) {
+        let world = self.world.get_mut();
+        world.store_resource(resource);
+    }
 }
 
 impl Scheduler for ECS {
@@ -103,6 +108,58 @@ pub trait SystemParam {
 
     fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
+}
+
+pub struct Res<'a, T: 'static>(&'a T);
+
+impl<'a, T> Deref for Res<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a, T> SystemParam for Res<'a, T> {
+    type Item<'new> = Res<'new, T>;
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+        let world = unsafe { &*world.get() };
+        Res(world.get_resource::<T>().unwrap())
+    }
+
+    fn collect_types(types: &mut impl TypeSet) {
+        types.insert_type::<T>(RefType::Immutable);
+    }
+}
+
+pub struct ResMut<'a, T: 'static>(&'a mut T);
+
+impl<'a, T> Deref for ResMut<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a, T> DerefMut for ResMut<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<'a, T: 'static> SystemParam for ResMut<'a, T> {
+    type Item<'new> = ResMut<'new, T>;
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+        let world = unsafe { &mut *world.get() };
+        ResMut(unsafe { world.get_resource_mut::<T>().unwrap() })
+    }
+
+    fn collect_types(types: &mut impl TypeSet) {
+        types.insert_type::<T>(RefType::Mutable);
+    }
 }
 
 pub struct StoredSystem<Input, F> {
