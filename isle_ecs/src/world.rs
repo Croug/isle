@@ -1,6 +1,5 @@
 use std::{
-    any::{Any, TypeId},
-    hash::{BuildHasher, Hash, Hasher}, cell::RefCell,
+    any::{Any, TypeId}, cell::UnsafeCell, hash::{BuildHasher, Hash, Hasher}
 };
 
 use hashbrown::HashMap;
@@ -15,11 +14,13 @@ pub struct World {
 }
 
 impl World {
-    pub fn new() -> Self {
-        Self {
-            components: HashMap::new(),
-            resources: HashMap::new(),
-        }
+    pub fn new() -> UnsafeCell<Self> {
+        UnsafeCell::new(
+            Self {
+                components: HashMap::new(),
+                resources: HashMap::new(),
+            }
+        )
     }
 
     pub fn store_resource<T: 'static>(&mut self, resource: T){
@@ -52,9 +53,12 @@ impl World {
             .downcast_ref::<T>()
     }
 
+    pub fn get_entities_with_component(&self, type_id: TypeId) -> Vec<Entity> {
+        todo!()
+    }
+
     /// # Safety
-    /// This function must only be called in a single threaded environment or
-    /// from within a scheduled context.
+    /// Caller ensures that there are no other mutable references to the component
     pub unsafe fn get_component_mut<T: Component + 'static>(&mut self, entity: &Entity) -> Option<&mut T>{
         self.components
             .get_mut(&TypeId::of::<T>())?
@@ -63,19 +67,22 @@ impl World {
     }
 }
 
-fn hash_key<K: Hash, V>(key: &K, map: &HashMap<K, V>) -> u64 {
-    let mut hasher = map.hasher().build_hasher();
-    key.hash(&mut hasher);
-    hasher.finish()
-}
+// fn hash_key<K: Hash, V>(key: &K, map: &HashMap<K, V>) -> u64 {
+//     let mut hasher = map.hasher().build_hasher();
+//     key.hash(&mut hasher);
+//     hasher.finish()
+// }
 
 #[cfg(test)]
 mod tests {
+    use crate::world;
+
     use super::*;
 
     #[test]
     fn resource_storage_retrieval() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val = 47u32;
         
         world.store_resource(val);
@@ -87,7 +94,8 @@ mod tests {
 
     #[test]
     fn resource_storage_retrieval_varied() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -103,7 +111,8 @@ mod tests {
 
     #[test]
     fn resource_mutate() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val = 47u32;
 
         world.store_resource(val);
@@ -118,7 +127,8 @@ mod tests {
 
     #[test]
     fn resource_mutate_varied() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -137,7 +147,8 @@ mod tests {
 
     #[test]
     fn component_storage_retrieval() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val = 47u32;
         
         world.store_component(Entity(0,0), val);
@@ -149,7 +160,8 @@ mod tests {
 
     #[test]
     fn component_storage_retrieval_varied() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -165,7 +177,8 @@ mod tests {
 
     #[test]
     fn component_mutate() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val = 47u32;
 
         world.store_component(Entity(0,0), val);
@@ -180,7 +193,8 @@ mod tests {
 
     #[test]
     fn component_mutate_varied() {
-        let mut world = World::new();
+        let world = World::new();
+        let world = unsafe { &mut *world.get() };
         let val1 = 47u32;
         let val2 = 64u8;
 

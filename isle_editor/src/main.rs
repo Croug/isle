@@ -1,3 +1,5 @@
+use std::cell::UnsafeCell;
+
 use isle_ecs::{
     ecs::{
         System,
@@ -20,7 +22,7 @@ struct MyComponentFour;
 impl SystemParam for &MyResource {
     type Item<'new> = &'new MyResource;
 
-    fn from_world(_world: &mut World) -> Self::Item<'_> {
+    fn from_world(_world: &UnsafeCell<World>) -> Self::Item<'_> {
         &MyResource(42)
     }
 

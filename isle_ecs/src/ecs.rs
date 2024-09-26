@@ -1,4 +1,4 @@
-use std::{any::{type_name, TypeId}, collections::HashSet, marker::PhantomData};
+use std::{any::{type_name, TypeId}, cell::UnsafeCell, collections::HashSet, marker::PhantomData};
 
 use super::world::World;
 use isle_engine::Scheduler;
@@ -9,8 +9,6 @@ pub enum RefType {
     Mutable,
     OptionalImmutable,
     OptionalMutable,
-    Present,
-    Absent,
 }
 
 impl RefType {
@@ -40,7 +38,7 @@ impl std::hash::Hash for BorrowSignature {
 
 pub struct ECS {
     systems: Vec<Box<dyn System>>,
-    world: World,
+    world: UnsafeCell<World>,
 }
 
 impl ECS {
@@ -58,13 +56,13 @@ impl ECS {
 impl Scheduler for ECS {
     fn spin(&mut self) {
         for system in self.systems.iter_mut() {
-            system.run(&mut self.world)
+            system.run(&self.world)
         }
     }
 }
 
 pub trait System {
-    fn run(&mut self, world: &mut World);
+    fn run(&mut self, world: &UnsafeCell<World>);
 }
 
 pub trait TypeSet {
@@ -75,7 +73,7 @@ impl TypeSet for HashSet<BorrowSignature> {
     fn insert_type<T: 'static>(&mut self, ref_type: RefType) {
         let type_id = TypeId::of::<T>();
         if !self.insert(BorrowSignature(type_id, ref_type)) {
-            panic!("Duplicte type in dependency list\nType {} appears at least twice", type_name::<T>());
+            panic!("Duplicate type in dependency list\nType {} appears at least twice", type_name::<T>());
         }
     }
 }
@@ -89,7 +87,7 @@ pub trait IntoSystem<Input> {
 pub trait SystemParam {
     type Item<'new>;
 
-    fn from_world<'w>(world: &'w mut World) -> Self::Item<'w>;
+    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
 }
 
@@ -112,12 +110,9 @@ macro_rules! impl_system_param {
         {
             type Item<'new> = ($($($params::Item<'new>),+)?);
 
-            fn from_world<'w>(world: &'w mut World) -> Self::Item<'w> {
+            fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
                 $($(
-                    let $params = {
-                        let world: &mut World = unsafe { &mut *(world as *mut World) };
-                        $params::from_world(world)
-                    };
+                    let $params = $params::from_world(unsafe { &*world });
                 )+)?
 
                 ($($($params),+)?)
@@ -153,7 +148,7 @@ macro_rules! impl_system {
                 FnMut( $($params),* ) +
                 FnMut( $(<$params as SystemParam>::Item<'b>),* )
         {
-            fn run(&mut self, world: &mut World) {
+            fn run(&mut self, world: &UnsafeCell<World>) {
                 fn call_inner<$($params),*>(
                     mut f: impl FnMut($($params),*),
                     $($params: $params),*
@@ -162,10 +157,7 @@ macro_rules! impl_system {
                 }
 
                 $(
-                    let $params = {
-                        let world: &mut World = unsafe { &mut *(world as *mut World) };
-                        $params::from_world(world)
-                    };
+                    let $params = $params::from_world(&world);
                 )*
 
                 call_inner(&mut self.f, $($params),*);
