@@ -7,7 +7,8 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
-    quote!{
+    quote! {
         impl isle_ecs::component::Component for #name {}
-    }.into()
+    }
+    .into()
 }
