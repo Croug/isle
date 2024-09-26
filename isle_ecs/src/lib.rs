@@ -1,12 +1,8 @@
-pub mod world;
 pub mod component;
 pub mod ecs;
 pub mod query;
+pub mod world;
 
 pub mod prelude {
-    pub use super::ecs::{
-        System,
-        IntoSystem,
-        SystemParam,
-    };
+    pub use crate::{component::*, ecs::*, query::*};
 }

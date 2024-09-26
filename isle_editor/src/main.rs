@@ -1,15 +1,6 @@
 use std::cell::UnsafeCell;
 
-use isle_ecs::{
-    ecs::{
-        System,
-        IntoSystem,
-        ECS,
-        SystemParam,
-    },
-    world::World,
-    query::{Query, With, Without}, component::Component
-};
+use isle_ecs::{prelude::*, world::World};
 use isle_engine::Scheduler;
 
 struct MyResource(pub usize);
@@ -48,10 +39,7 @@ fn main() {
     ecs.spin();
 }
 
-fn my_complete_system(
-    res: &MyResource,
-    query: Query< (&MyComponentOne, &MyComponentFour) >
-) {
+fn my_complete_system(res: &MyResource, query: Query<(&MyComponentOne, &MyComponentFour)>) {
     println!("Res is {}", res.0);
     for (one, four) in query.iter() {
         println!("One is {:?}", one);
@@ -59,14 +47,8 @@ fn my_complete_system(
     }
 }
 
-fn my_resource_system(
-    res: & MyResource,
-) {
+fn my_resource_system(res: &MyResource) {
     println!("Res is {}", res.0);
 }
 
-fn my_query_system(
-    _query: Query< (&MyComponentOne, &MyComponentFour) >
-) {
-
-}
+fn my_query_system(_query: Query<(&MyComponentOne, &MyComponentFour)>) {}

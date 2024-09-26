@@ -1,4 +1,9 @@
-use std::{any::{type_name, TypeId}, cell::UnsafeCell, collections::HashSet, marker::PhantomData};
+use std::{
+    any::{type_name, TypeId},
+    cell::UnsafeCell,
+    collections::HashSet,
+    marker::PhantomData,
+};
 
 use super::world::World;
 use isle_engine::Scheduler;
@@ -73,7 +78,10 @@ impl TypeSet for HashSet<BorrowSignature> {
     fn insert_type<T: 'static>(&mut self, ref_type: RefType) {
         let type_id = TypeId::of::<T>();
         if !self.insert(BorrowSignature(type_id, ref_type)) {
-            panic!("Duplicate type in dependency list\nType {} appears at least twice", type_name::<T>());
+            panic!(
+                "Duplicate type in dependency list\nType {} appears at least twice",
+                type_name::<T>()
+            );
         }
     }
 }
@@ -209,4 +217,3 @@ impl_into_system!(T1, T2, T3, T4, T5);
 impl_into_system!(T1, T2, T3, T4, T5, T6);
 impl_into_system!(T1, T2, T3, T4, T5, T6, T7);
 impl_into_system!(T1, T2, T3, T4, T5, T6, T7, T8);
-

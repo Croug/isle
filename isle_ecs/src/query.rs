@@ -1,12 +1,14 @@
-use std::{any::{type_name, TypeId}, cell::UnsafeCell, collections::HashSet, marker::PhantomData};
+use std::{any::TypeId, cell::UnsafeCell, collections::HashSet, marker::PhantomData};
 
 use isle_engine::entity::Entity;
 
-use crate::{component::Component, ecs::{
-    BorrowSignature, RefType, SystemParam, TypeSet
-}, world::World};
+use crate::{
+    component::Component,
+    ecs::{BorrowSignature, RefType, SystemParam, TypeSet},
+    world::World,
+};
 
-pub struct Query<'w, T, V = ()> 
+pub struct Query<'w, T, V = ()>
 where
     T: QueryParam,
     V: ReadOnlyQueryParam,
@@ -30,7 +32,9 @@ where
 
         let components: HashSet<TypeId> = interactable_components
             .union(&with_components)
-            .filter(|BorrowSignature(_, ref_type)| ref_type != &RefType::OptionalImmutable && ref_type != &RefType::OptionalMutable)
+            .filter(|BorrowSignature(_, ref_type)| {
+                ref_type != &RefType::OptionalImmutable && ref_type != &RefType::OptionalMutable
+            })
             .copied()
             .map(|BorrowSignature(type_id, _)| type_id)
             .collect();
@@ -42,26 +46,27 @@ where
             .collect();
 
         interactable_components
-        .iter()
-        .map(|BorrowSignature(type_id, _)| {
-            let world = unsafe { &mut *self.world.get() };
-            world.get_entities_with_component(type_id)
-        })
-        .flatten()
-        .filter(|entity| {
-            let world = unsafe { &mut *self.world.get() };
-            let entity_components = world.get_entity_components(entity);
-        
-            entity_components.is_superset(&components) && entity_components.is_disjoint(&without_components)
-        })
-        .collect()
+            .iter()
+            .map(|BorrowSignature(type_id, _)| {
+                let world = unsafe { &mut *self.world.get() };
+                world.get_entities_with_component(type_id)
+            })
+            .flatten()
+            .filter(|entity| {
+                let world = unsafe { &mut *self.world.get() };
+                let entity_components = world.get_entity_components(entity);
+
+                entity_components.is_superset(&components)
+                    && entity_components.is_disjoint(&without_components)
+            })
+            .collect()
     }
     pub fn iter(&self) -> impl Iterator<Item = T::Item<'w>> + '_ {
         let entities = self.fetch_entities();
 
-        entities.into_iter().map(move |entity| {
-            T::from_entity(entity, &self.world)
-        })
+        entities
+            .into_iter()
+            .map(move |entity| T::from_entity(entity, &self.world))
     }
 }
 
@@ -74,7 +79,7 @@ where
     fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
         Query::<T, V> {
             world: &world,
-            marker: PhantomData::<(T,V)>,
+            marker: PhantomData::<(T, V)>,
         }
     }
     fn collect_types(types: &mut impl crate::ecs::TypeSet) -> () {
@@ -83,7 +88,7 @@ where
 
         T::get_components(&mut _component_set);
         V::get_components(&mut _filter_set, &mut _component_set);
-        types.insert_type::<Query<T,V>>(RefType::Immutable);
+        types.insert_type::<Query<T, V>>(RefType::Immutable);
     }
 }
 
@@ -114,10 +119,9 @@ impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
     }
 }
 
-impl<T: Component + 'static> QueryParam for &T
-{
+impl<T: Component + 'static> QueryParam for &T {
     type Item<'new> = &'new T;
-        
+
     fn get_components(type_set: &mut impl TypeSet) -> () {
         type_set.insert_type::<T>(RefType::Immutable);
     }
