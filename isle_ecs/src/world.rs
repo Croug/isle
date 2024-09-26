@@ -94,6 +94,8 @@ impl World {
 mod tests {
     use super::*;
 
+    impl<T: 'static> Component for T {}
+
     #[test]
     fn resource_storage_retrieval() {
         let world = World::new();

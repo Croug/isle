@@ -2,6 +2,7 @@
 
 members = [
     "isle_ecs",
+    "isle_ecs/macros",
     "isle_engine",
     "isle_editor",
 ]

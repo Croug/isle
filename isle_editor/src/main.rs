@@ -1,20 +1,23 @@
 use std::cell::UnsafeCell;
 
 use isle_ecs::{prelude::*, world::World};
-use isle_engine::Scheduler;
+use isle_engine::{
+    entity::Entity,
+    Scheduler,
+};
 
 struct MyResource(pub usize);
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 struct MyComponentOne;
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 struct MyComponentTwo;
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 
 struct MyComponentThree;
-#[derive(Debug)]
+#[derive(Component, Debug)]
 struct MyComponentFour;
 
 impl SystemParam for &MyResource {
@@ -32,6 +35,15 @@ impl SystemParam for &MyResource {
 fn main() {
     let mut ecs = ECS::new();
 
+    ecs.add_component(Entity(0,0), MyComponentOne);
+    ecs.add_component(Entity(0,0), MyComponentTwo);
+    ecs.add_component(Entity(0,0), MyComponentThree);
+    ecs.add_component(Entity(0,0), MyComponentFour);
+
+    ecs.add_component(Entity(0,1), MyComponentOne);
+    ecs.add_component(Entity(0,1), MyComponentThree);
+    ecs.add_component(Entity(0,1), MyComponentFour);
+
     ecs.add_system(my_resource_system);
     ecs.add_system(my_query_system);
     ecs.add_system(my_complete_system);
@@ -39,7 +51,7 @@ fn main() {
     ecs.spin();
 }
 
-fn my_complete_system(res: &MyResource, query: Query<(&MyComponentOne, &MyComponentFour)>) {
+fn my_complete_system(res: &MyResource, query: Query<(&MyComponentOne, &MyComponentFour), Without<MyComponentTwo>>) {
     println!("Res is {}", res.0);
     for (one, four) in query.iter() {
         println!("One is {:?}", one);

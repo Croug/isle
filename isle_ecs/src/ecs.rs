@@ -5,6 +5,8 @@ use std::{
     marker::PhantomData,
 };
 
+use crate::component::Component;
+
 use super::world::World;
 use isle_engine::{entity::Entity, Scheduler};
 
@@ -56,7 +58,7 @@ impl ECS {
     pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
         self.systems.push(Box::new(system.into_system()));
     }
-    pub fn add_component<T: 'static>(&mut self, entity: Entity, component: T) {
+    pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T) {
         let world = unsafe { &mut *self.world.get() };
         world.store_component(entity, component);
     }
