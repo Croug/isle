@@ -51,11 +51,10 @@ fn main() {
     ecs.spin();
 }
 
-fn my_complete_system(res: &MyResource, query: Query<(&MyComponentOne, &MyComponentFour), Without<MyComponentTwo>>) {
+fn my_complete_system(res: &MyResource, query: Query<(Entity, &MyComponentOne, &MyComponentFour), Without<MyComponentTwo>>) {
     println!("Res is {}", res.0);
-    for (one, four) in query.iter() {
-        println!("One is {:?}", one);
-        println!("Four is {:?}", four);
+    for (entity, one, four) in query.iter() {
+        println!("<complete_system> Entity: {entity:?}, One: {one:?}, Four: {four:?}");
     }
 }
 
@@ -63,4 +62,8 @@ fn my_resource_system(res: &MyResource) {
     println!("Res is {}", res.0);
 }
 
-fn my_query_system(_query: Query<(&MyComponentOne, &MyComponentFour)>) {}
+fn my_query_system(_query: Query<(Entity, &MyComponentOne, &MyComponentFour, Option<&MyComponentTwo>)>) {
+    for (entity, one, four, two) in _query.iter() {
+        println!("<query_system> Entity: {entity:?}, One: {one:?}, Two: {two:?}, Four: {four:?}");
+    }
+}

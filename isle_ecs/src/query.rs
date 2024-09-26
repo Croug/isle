@@ -119,6 +119,17 @@ impl<T: Component + 'static> ReadOnlyQueryParam for Without<T> {
     }
 }
 
+impl QueryParam for Entity {
+    type Item<'new> = Entity;
+
+    fn get_components(_: &mut impl TypeSet) -> () {
+        ()
+    }
+    fn from_entity<'w>(entity: Entity, _: &'w UnsafeCell<World>) -> Self::Item<'w> {
+        entity
+    }
+}
+
 impl<T: Component + 'static> QueryParam for &T {
     type Item<'new> = &'new T;
 

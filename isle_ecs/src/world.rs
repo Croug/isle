@@ -94,7 +94,8 @@ impl World {
 mod tests {
     use super::*;
 
-    impl<T: 'static> Component for T {}
+    impl Component for u32 {}
+    impl Component for u8 {}
 
     #[test]
     fn resource_storage_retrieval() {
