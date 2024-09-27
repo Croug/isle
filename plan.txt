@@ -1,0 +1,19 @@
+isle_engine::{
+  trait Scheduler<T> {
+    fn get_schedule(&mut self, ) -> impl Schedule<T>
+    fn set_dirty(&mut self) // indicate list of runnables has changed
+  }
+  
+  trait Schedule<T> {
+    fn get_next(&self) -> Option<T> // blocks if next runnable isn't ready
+    fn report_done(&self, system: T) // report that a system has finished execution
+  }
+
+  trait Runnable<T: impl World> {
+    fn run(&mut self, &T)
+  }
+
+  trait World {
+    /* ??? */
+  }
+}
