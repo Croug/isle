@@ -1,19 +1,32 @@
 isle_engine::{
-  trait Scheduler<T> {
-    fn get_schedule(&mut self, ) -> impl Schedule<T>
-    fn set_dirty(&mut self) // indicate list of runnables has changed
-  }
-  
-  trait Schedule<T> {
-    fn get_next(&self) -> Option<T> // blocks if next runnable isn't ready
-    fn report_done(&self, system: T) // report that a system has finished execution
+  struct Flow<W: World, S: Scheduler, E: EventLoop> {
+    world: UnsafeCell<W>,
+    scheduler: UnsafeCell<S>,
+    event_loop: E,
+    phantom,
+
+    with_scheduler(&mut self, scheduler: S) -> &mut Self
+    with_event_loop(&mut self, event_loop: E) -> &mut Self 
   }
 
-  trait Runnable<T: impl World> {
-    fn run(&mut self, &T)
+  trait Scheduler<W: World, T: 'static> {
+    fn get_schedule(&mut self, world: W) -> impl Schedule<Item=T>
+    fn set_dirty(&mut self) // indicate list of items has changed
+  }
+  
+  trait Schedule {
+    type Item
+    fn get_next(&self) -> Option<Self::Item> // blocks if next item isn't ready, returns None after all are run
+    fn report_done(&self, item: Self::Item) // report that an item has finished execution
+  }
+
+  trait EventLoop<W: World, S: Scheduler> {
+    phantom,
+
+    fn run(world: UnsafeCell<W>, scheduler: &UnsafeCell<S>)
   }
 
   trait World {
-    /* ??? */
+    fn new() -> Self
   }
 }
