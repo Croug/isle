@@ -1,12 +1,12 @@
 use std::{cell::UnsafeCell, marker::PhantomData};
 
-use crate::{executor::Executor, plugin::EnginePlugin, schedule::Scheduler, world::World};
+use crate::{executor::Executor, plugin::EngineHook, schedule::Scheduler, world::World};
 
 pub struct Flow<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> {
     world: UnsafeCell<W>,
     scheduler: S,
     executor: E,
-    plugins: Vec<Box<dyn EnginePlugin<T, W, S, E>>>,
+    plugins: Vec<Box<dyn EngineHook<T, W, S, E>>>,
     _phantom: PhantomData<T>
 }
 
@@ -16,7 +16,7 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> Flow<T, W, 
             world: None,
             scheduler: None,
             executor: None,
-            plugins: Vec::new(),
+            hooks: Vec::new(),
             _phantom: PhantomData
         }
     }
@@ -26,7 +26,7 @@ pub struct FlowBuilder<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, 
     world: Option<W>,
     scheduler: Option<S>,
     executor: Option<E>,
-    plugins: Vec<Box<dyn EnginePlugin<T, W, S, E>>>,
+    hooks: Vec<Box<dyn EngineHook<T, W, S, E>>>,
     _phantom: PhantomData<T>
 }
 
@@ -43,13 +43,20 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder
         self.executor = Some(executor);
         self
     }
-    pub fn with_engine_plugin<P: EnginePlugin<T,W,S,E> + 'static>(&mut self, mut plugin: P) -> &mut Self {
+    pub fn with_hook<P: EngineHook<T,W,S,E> + 'static>(&mut self, mut plugin: P) -> &mut Self {
         plugin.setup(self);
-        self.plugins.push(Box::new(plugin));
+        self.hooks.push(Box::new(plugin));
         self
     }
     pub fn with_plugin<P: FnMut(&mut FlowBuilder<T, W, S, E>)>(&mut self, mut plugin: P) -> &mut Self {
         plugin(self);
+        self
+    }
+    pub fn with_default_plugins(&mut self) -> &mut Self {
+
+        // #[cfg(feature = "ecs")]
+        // self.with_plugin()
+
         self
     }
     pub fn build(self) -> Flow<T, W, S, E> {
@@ -58,7 +65,7 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder
                 world: UnsafeCell::new(world),
                 scheduler,
                 executor,
-                plugins: self.plugins,
+                plugins: self.hooks,
                 _phantom: PhantomData
             }
         } else {
