@@ -1,5 +1,7 @@
 use isle::prelude::*;
 
 fn main() {
-    let flow = Flow::new();
+    let mut flow = Flow::new()
+        .with_default_plugins()
+        .build();
 }

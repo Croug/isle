@@ -31,26 +31,25 @@ pub struct FlowBuilder<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, 
 }
 
 impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder<T, W, S, E> {
-    pub fn with_world(&mut self, world: W) -> &mut Self {
+    pub fn with_world(mut self, world: W) -> Self {
         self.world = Some(world);
         self
     }
-    pub fn with_scheduler(&mut self, scheduler: S) -> &mut Self {
+    pub fn with_scheduler(mut self, scheduler: S) -> Self {
         self.scheduler = Some(scheduler);
         self
     }
-    pub fn with_executor(&mut self, executor: E) -> &mut Self {
+    pub fn with_executor(mut self, executor: E) -> Self {
         self.executor = Some(executor);
         self
     }
-    pub fn with_hook<P: EngineHook<T,W,S,E> + 'static>(&mut self, mut plugin: P) -> &mut Self {
-        plugin.setup(self);
+    pub fn with_hook<P: EngineHook<T,W,S,E> + 'static>(mut self, mut plugin: P) -> Self {
+        plugin.setup(&mut self);
         self.hooks.push(Box::new(plugin));
         self
     }
-    pub fn with_plugin<P: FnMut(&mut Self)>(&mut self, mut plugin: P) -> &mut Self {
-        plugin(self);
-        self
+    pub fn with_plugin<P: FnMut(Self) -> Self>(self, mut plugin: P) -> Self {
+        plugin(self)
     }
     pub fn build(self) -> Flow<T, W, S, E> {
         if let (Some(world), Some(scheduler), Some(executor)) = (self.world, self.scheduler, self.executor) {

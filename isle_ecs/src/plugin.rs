@@ -33,9 +33,9 @@ impl isle_engine::executor::Executor<System, crate::world::World, crate::schedul
 
 type FlowBuilder = isle_engine::flow::FlowBuilder<System, crate::world::World, crate::schedule::Scheduler, crate::executor::Executor>;
 
-pub fn ecs_plugin(flow_builder: &mut FlowBuilder) {
+pub fn ecs_plugin(flow_builder: FlowBuilder) -> FlowBuilder {
     flow_builder
         .with_world(crate::world::World::new())
         .with_scheduler(crate::schedule::Scheduler {})
-        .with_executor(crate::executor::Executor {});
+        .with_executor(crate::executor::Executor {})
 }
