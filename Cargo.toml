@@ -8,3 +8,14 @@ members = [
 ]
 
 resolver = "2"
+
+[package]
+name = "isle"
+
+[dependencies]
+isle_ecs = { path = "isle_ecs" }
+isle_engine = { path = "isle_engine" }
+
+[features]
+default = ["ecs"]
+ecs = []

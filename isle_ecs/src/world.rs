@@ -1,6 +1,5 @@
 use std::{
     any::{Any, TypeId},
-    cell::UnsafeCell,
     collections::HashSet,
 };
 
@@ -17,12 +16,12 @@ pub struct World {
 }
 
 impl World {
-    pub fn new() -> UnsafeCell<Self> {
-        UnsafeCell::new(Self {
+    pub fn new() -> Self {
+        Self {
             components: HashMap::new(),
             resources: HashMap::new(),
             entities: HashMap::new(),
-        })
+        }
     }
 
     pub fn store_resource<T: 'static>(&mut self, resource: T) {
@@ -99,8 +98,7 @@ mod tests {
 
     #[test]
     fn resource_storage_retrieval() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val = 47u32;
 
         world.store_resource(val);
@@ -112,8 +110,7 @@ mod tests {
 
     #[test]
     fn resource_storage_retrieval_varied() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -129,8 +126,7 @@ mod tests {
 
     #[test]
     fn resource_mutate() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val = 47u32;
 
         world.store_resource(val);
@@ -145,8 +141,7 @@ mod tests {
 
     #[test]
     fn resource_mutate_varied() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -165,8 +160,7 @@ mod tests {
 
     #[test]
     fn component_storage_retrieval() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val = 47u32;
 
         world.store_component(Entity(0, 0), val);
@@ -178,8 +172,7 @@ mod tests {
 
     #[test]
     fn component_storage_retrieval_varied() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val1 = 47u32;
         let val2 = 64u8;
 
@@ -195,8 +188,7 @@ mod tests {
 
     #[test]
     fn component_mutate() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val = 47u32;
 
         world.store_component(Entity(0, 0), val);
@@ -211,8 +203,7 @@ mod tests {
 
     #[test]
     fn component_mutate_varied() {
-        let world = World::new();
-        let world = unsafe { &mut *world.get() };
+        let mut world = World::new();
         let val1 = 47u32;
         let val2 = 64u8;
 

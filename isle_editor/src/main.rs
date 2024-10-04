@@ -1,4 +1,4 @@
-use isle_engine::prelude::*;
+use isle::prelude::*;
 
 fn main() {
     let flow = Flow::new();

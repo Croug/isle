@@ -48,15 +48,8 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder
         self.hooks.push(Box::new(plugin));
         self
     }
-    pub fn with_plugin<P: FnMut(&mut FlowBuilder<T, W, S, E>)>(&mut self, mut plugin: P) -> &mut Self {
+    pub fn with_plugin<P: FnMut(&mut Self)>(&mut self, mut plugin: P) -> &mut Self {
         plugin(self);
-        self
-    }
-    pub fn with_default_plugins(&mut self) -> &mut Self {
-
-        // #[cfg(feature = "ecs")]
-        // self.with_plugin()
-
         self
     }
     pub fn build(self) -> Flow<T, W, S, E> {

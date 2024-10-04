@@ -53,7 +53,7 @@ impl ECS {
     pub fn new() -> Self {
         Self {
             systems: Vec::new(),
-            world: World::new(),
+            world: UnsafeCell::new(World::new()),
         }
     }
     pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
