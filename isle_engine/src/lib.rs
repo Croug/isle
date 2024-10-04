@@ -15,6 +15,4 @@ pub mod plugin;
 
 pub mod prelude {
     pub use crate::flow::Flow;
-    #[cfg(feature = "ecs")]
-    pub use isle_ecs::prelude::*;
 }
