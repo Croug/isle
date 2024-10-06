@@ -6,7 +6,7 @@ pub struct Flow<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> 
     world: UnsafeCell<W>,
     scheduler: S,
     executor: E,
-    plugins: Vec<Box<dyn EngineHook<T, W, S, E>>>,
+    hooks: Vec<Box<dyn EngineHook<T, W, S, E>>>,
     _phantom: PhantomData<T>
 }
 
@@ -18,6 +18,17 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> Flow<T, W, 
             executor: None,
             hooks: Vec::new(),
             _phantom: PhantomData
+        }
+    }
+
+    pub fn run(&mut self) -> ! {
+        loop {
+            self.hooks.iter_mut().for_each(|hook| hook.pre_run(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| hook.run(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| hook.post_run(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| hook.pre_render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| hook.render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| hook.post_render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
         }
     }
 }
@@ -44,7 +55,7 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder
         self
     }
     pub fn with_hook<P: EngineHook<T,W,S,E> + 'static>(mut self, mut plugin: P) -> Self {
-        plugin.setup(&mut self);
+        self = plugin.setup(self);
         self.hooks.push(Box::new(plugin));
         self
     }
@@ -57,7 +68,7 @@ impl<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> FlowBuilder
                 world: UnsafeCell::new(world),
                 scheduler,
                 executor,
-                plugins: self.hooks,
+                hooks: self.hooks,
                 _phantom: PhantomData
             }
         } else {

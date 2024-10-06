@@ -1,9 +1,6 @@
 use std::cell::UnsafeCell;
 
 impl isle_engine::world::World for crate::world::World {
-    fn new() -> Self {
-        Self::new()
-    }
 }
 
 type System = Box<dyn crate::ecs::System + 'static>;
