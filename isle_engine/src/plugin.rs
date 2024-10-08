@@ -2,7 +2,7 @@ use crate::{executor::Executor, flow::FlowBuilder, schedule::Scheduler, world::W
 
 #[allow(unused_variables)]
 pub trait EngineHook<T: 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> {
-    fn setup(&mut self, flow_builder: FlowBuilder<T,W,S,E>) -> FlowBuilder<T,W,S,E> {
+    fn setup(&mut self, flow_builder: FlowBuilder<T, W, S, E>) -> FlowBuilder<T, W, S, E> {
         flow_builder
     }
     fn pre_run(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) {}
@@ -15,27 +15,58 @@ pub trait EngineHook<T: 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T,
 #[allow(unused_variables)]
 #[cfg(feature = "async")]
 pub trait AsyncEngineHook<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<T, W, S>> {
-    fn setup(&mut self, flow_builder: FlowBuilder<T,W,S,E>) -> impl std::future::Future<Output = FlowBuilder<T,W,S,E>> + Send {
-        async {
-            flow_builder
-        }
+    fn setup(
+        &mut self,
+        flow_builder: FlowBuilder<T, W, S, E>,
+    ) -> impl std::future::Future<Output = FlowBuilder<T, W, S, E>> + Send {
+        async { flow_builder }
     }
-    fn pre_run(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn pre_run(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
-    fn run(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn run(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
-    fn post_run(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn post_run(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
-    fn pre_render(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn pre_render(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
-    fn render(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn render(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
-    fn post_render(&mut self, world: &mut W, scheduler: &mut S, executor: &mut E) -> impl std::future::Future<Output = ()> + Send {
+    fn post_render(
+        &mut self,
+        world: &mut W,
+        scheduler: &mut S,
+        executor: &mut E,
+    ) -> impl std::future::Future<Output = ()> + Send {
         async {}
     }
 }

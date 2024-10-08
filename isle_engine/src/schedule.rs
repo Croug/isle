@@ -3,7 +3,11 @@ use std::cell::UnsafeCell;
 use crate::{executor::Executor, world::World};
 
 pub trait Scheduler<T: 'static, W: World, E: Executor<T, W>> {
-    fn get_schedule(&mut self, world: &UnsafeCell<W>, executor: &E) -> impl Schedule<Item = T> + 'static;
+    fn get_schedule(
+        &mut self,
+        world: &UnsafeCell<W>,
+        executor: &E,
+    ) -> impl Schedule<Item = T> + 'static;
 }
 
 pub trait Schedule {

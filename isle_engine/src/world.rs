@@ -1,2 +1,1 @@
-pub trait World {
-}
+pub trait World {}

@@ -15,9 +15,7 @@ struct MyComponentThree;
 struct MyComponentFour;
 
 fn main() {
-    let mut flow = Flow::new()
-        .with_default_plugins()
-        .build();
+    let mut flow = Flow::new().with_default_plugins().build();
 
     flow.add_resource(MyResource(0));
 
@@ -77,9 +75,7 @@ fn my_query_system(
     }
 }
 
-fn my_other_query_system(
-    query: Query<Entity, With<MyComponentTwo>>
-) {
+fn my_other_query_system(query: Query<Entity, With<MyComponentTwo>>) {
     for entity in query.iter() {
         println!("<other_query_system> Entity: {entity:?}");
     }

@@ -7,11 +7,11 @@ pub trait Scheduler {
     fn spin(&mut self);
 }
 
-pub mod flow;
-pub mod world;
 pub mod executor;
-pub mod schedule;
+pub mod flow;
 pub mod plugin;
+pub mod schedule;
+pub mod world;
 
 pub mod prelude {
     pub use crate::entity::Entity;

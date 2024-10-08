@@ -57,14 +57,19 @@ impl ECS {
     pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
         self.systems.push(Box::new(system.into_system()));
     }
-    pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T, world: &mut World) {
+    pub fn add_component<T: Component + 'static>(
+        &mut self,
+        entity: Entity,
+        component: T,
+        world: &mut World,
+    ) {
         world.store_component(entity, component);
     }
     pub fn add_resource<T: 'static>(&mut self, resource: T, world: &mut World) {
         world.store_resource(resource);
     }
     pub fn get_system_ids(&self) -> Vec<usize> {
-        self.systems.iter().enumerate().map(|(i,_)| i).collect()
+        self.systems.iter().enumerate().map(|(i, _)| i).collect()
     }
     pub fn run_system_by_id(&mut self, id: usize, world: &UnsafeCell<World>) {
         self.systems[id].run(world);

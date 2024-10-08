@@ -2,10 +2,13 @@ use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 use isle_engine::entity::Entity;
 
-use crate::{ecs::{IntoSystem, System, ECS}, prelude::Component, schedule::Schedule};
+use crate::{
+    ecs::{IntoSystem, System, ECS},
+    prelude::Component,
+    schedule::Schedule,
+};
 
-impl isle_engine::world::World for crate::world::World {
-}
+impl isle_engine::world::World for crate::world::World {}
 
 impl isle_engine::schedule::Schedule for crate::schedule::Schedule {
     type Item = usize;
@@ -23,14 +26,30 @@ impl isle_engine::executor::Executor<usize, crate::world::World> for crate::ecs:
     }
 }
 
-impl isle_engine::schedule::Scheduler<usize, crate::world::World, ECS> for crate::schedule::Scheduler {
-    fn get_schedule(&mut self, _world: &UnsafeCell<crate::world::World>, ecs: &ECS) -> impl isle_engine::schedule::Schedule<Item = usize> + 'static {
+impl isle_engine::schedule::Scheduler<usize, crate::world::World, ECS>
+    for crate::schedule::Scheduler
+{
+    fn get_schedule(
+        &mut self,
+        _world: &UnsafeCell<crate::world::World>,
+        ecs: &ECS,
+    ) -> impl isle_engine::schedule::Schedule<Item = usize> + 'static {
         Schedule::from_ecs(ecs)
     }
 }
 
-type FlowBuilder = isle_engine::flow::FlowBuilder<usize, crate::world::World, crate::schedule::Scheduler, crate::ecs::ECS>;
-type Flow = isle_engine::flow::Flow<usize, crate::world::World, crate::schedule::Scheduler, crate::ecs::ECS>;
+type FlowBuilder = isle_engine::flow::FlowBuilder<
+    usize,
+    crate::world::World,
+    crate::schedule::Scheduler,
+    crate::ecs::ECS,
+>;
+type Flow = isle_engine::flow::Flow<
+    usize,
+    crate::world::World,
+    crate::schedule::Scheduler,
+    crate::ecs::ECS,
+>;
 
 pub trait WithECS {
     fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T);

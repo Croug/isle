@@ -1,6 +1,16 @@
-use std::{cell::UnsafeCell, marker::PhantomData, sync::atomic::{AtomicU32, Ordering}};
+use std::{
+    cell::UnsafeCell,
+    marker::PhantomData,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
-use crate::{entity::Entity, executor::Executor, plugin::EngineHook, schedule::{Schedule, Scheduler}, world::World};
+use crate::{
+    entity::Entity,
+    executor::Executor,
+    plugin::EngineHook,
+    schedule::{Schedule, Scheduler},
+    world::World,
+};
 
 pub struct Flow<T: Copy + 'static, W: World + 'static, S: Scheduler<T, W, E>, E: Executor<T, W>> {
     world: UnsafeCell<W>,
@@ -9,7 +19,7 @@ pub struct Flow<T: Copy + 'static, W: World + 'static, S: Scheduler<T, W, E>, E:
     hooks: Vec<Box<dyn EngineHook<T, W, S, E>>>,
     generation: AtomicU32,
     next_entity: AtomicU32,
-    _phantom: PhantomData<T>
+    _phantom: PhantomData<T>,
 }
 
 impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow<T, W, S, E> {
@@ -19,7 +29,7 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
             scheduler: None,
             executor: None,
             hooks: Vec::new(),
-            _phantom: PhantomData
+            _phantom: PhantomData,
         }
     }
 
@@ -34,12 +44,42 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
 
     pub fn run(&mut self) -> ! {
         loop {
-            self.hooks.iter_mut().for_each(|hook| hook.pre_run(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| {
+                hook.pre_run(
+                    unsafe { &mut *self.world.get() },
+                    &mut self.scheduler,
+                    &mut self.executor,
+                )
+            });
             self.run_schedule();
-            self.hooks.iter_mut().for_each(|hook| hook.post_run(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
-            self.hooks.iter_mut().for_each(|hook| hook.pre_render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
-            self.hooks.iter_mut().for_each(|hook| hook.render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
-            self.hooks.iter_mut().for_each(|hook| hook.post_render(unsafe { &mut *self.world.get() }, &mut self.scheduler, &mut self.executor));
+            self.hooks.iter_mut().for_each(|hook| {
+                hook.post_run(
+                    unsafe { &mut *self.world.get() },
+                    &mut self.scheduler,
+                    &mut self.executor,
+                )
+            });
+            self.hooks.iter_mut().for_each(|hook| {
+                hook.pre_render(
+                    unsafe { &mut *self.world.get() },
+                    &mut self.scheduler,
+                    &mut self.executor,
+                )
+            });
+            self.hooks.iter_mut().for_each(|hook| {
+                hook.render(
+                    unsafe { &mut *self.world.get() },
+                    &mut self.scheduler,
+                    &mut self.executor,
+                )
+            });
+            self.hooks.iter_mut().for_each(|hook| {
+                hook.post_render(
+                    unsafe { &mut *self.world.get() },
+                    &mut self.scheduler,
+                    &mut self.executor,
+                )
+            });
         }
     }
 
@@ -58,7 +98,8 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
     pub fn make_entity(&self) -> Entity {
         Entity(
             self.generation.load(Ordering::SeqCst),
-            self.next_entity.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+            self.next_entity
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         )
     }
 }
@@ -68,10 +109,12 @@ pub struct FlowBuilder<T: 'static, W: World + 'static, S: Scheduler<T, W, E>, E:
     scheduler: Option<S>,
     executor: Option<E>,
     hooks: Vec<Box<dyn EngineHook<T, W, S, E>>>,
-    _phantom: PhantomData<T>
+    _phantom: PhantomData<T>,
 }
 
-impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> FlowBuilder<T, W, S, E> {
+impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>>
+    FlowBuilder<T, W, S, E>
+{
     pub fn with_world(mut self, world: W) -> Self {
         self.world = Some(UnsafeCell::new(world));
         self
@@ -84,7 +127,7 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
         self.executor = Some(executor);
         self
     }
-    pub fn with_hook<P: EngineHook<T,W,S,E> + 'static>(mut self, mut plugin: P) -> Self {
+    pub fn with_hook<P: EngineHook<T, W, S, E> + 'static>(mut self, mut plugin: P) -> Self {
         self = plugin.setup(self);
         self.hooks.push(Box::new(plugin));
         self
@@ -93,7 +136,9 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
         plugin(self)
     }
     pub fn build(self) -> Flow<T, W, S, E> {
-        if let (Some(world), Some(scheduler), Some(executor)) = (self.world, self.scheduler, self.executor) {
+        if let (Some(world), Some(scheduler), Some(executor)) =
+            (self.world, self.scheduler, self.executor)
+        {
             Flow {
                 world,
                 scheduler,
@@ -101,7 +146,7 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
                 generation: AtomicU32::new(0),
                 next_entity: AtomicU32::new(0),
                 hooks: self.hooks,
-                _phantom: PhantomData
+                _phantom: PhantomData,
             }
         } else {
             panic!("FlowBuilder missing required fields");
