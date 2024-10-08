@@ -36,7 +36,7 @@ impl<T: Copy + 'static, W: World, S: Scheduler<T, W, E>, E: Executor<T, W>> Flow
     fn run_schedule(&mut self) {
         let schedule = self.scheduler.get_schedule(&self.world, &self.executor);
 
-        while let Some(item) = schedule.get_next() {
+        for item in schedule.iter() {
             self.executor.run(&self.world, item);
             schedule.report_done(item);
         }

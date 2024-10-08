@@ -31,10 +31,10 @@ fn main() {
     flow.add_component(entity_b, MyComponentThree);
     flow.add_component(entity_b, MyComponentFour);
 
-    // flow.add_system(my_complete_system);
-    // flow.add_system(my_resource_system);
-    // flow.add_system(my_query_system);
-    // flow.add_system(my_other_query_system);
+    flow.add_system(my_complete_system);
+    flow.add_system(my_resource_system);
+    flow.add_system(my_query_system);
+    flow.add_system(my_other_query_system);
 
     flow.add_system(my_counting_system);
 
