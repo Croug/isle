@@ -14,5 +14,6 @@ pub mod schedule;
 pub mod plugin;
 
 pub mod prelude {
+    pub use crate::entity::Entity;
     pub use crate::flow::Flow;
 }

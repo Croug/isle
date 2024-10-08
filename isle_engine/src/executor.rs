@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 
-use crate::{world::World, schedule::Scheduler};
+use crate::world::World;
 
-pub trait Executor<T: 'static, W: World, S: Scheduler<W, T>> {
-    fn run(&mut self, world: &UnsafeCell<W>, scheduler: &mut S);
+pub trait Executor<T, W: World> {
+    fn run(&mut self, world: &UnsafeCell<W>, identifier: T);
 }

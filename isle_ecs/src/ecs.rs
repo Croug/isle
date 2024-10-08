@@ -9,7 +9,7 @@ use std::{
 use crate::component::Component;
 
 use super::world::World;
-use isle_engine::{entity::Entity, Scheduler};
+use isle_engine::entity::Entity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RefType {
@@ -46,34 +46,28 @@ impl std::hash::Hash for BorrowSignature {
 
 pub struct ECS {
     systems: Vec<Box<dyn System>>,
-    world: UnsafeCell<World>,
 }
 
 impl ECS {
     pub fn new() -> Self {
         Self {
             systems: Vec::new(),
-            world: UnsafeCell::new(World::new()),
         }
     }
     pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
         self.systems.push(Box::new(system.into_system()));
     }
-    pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T) {
-        let world = unsafe { &mut *self.world.get() };
+    pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T, world: &mut World) {
         world.store_component(entity, component);
     }
-    pub fn add_resource<T: 'static>(&mut self, resource: T) {
-        let world = self.world.get_mut();
+    pub fn add_resource<T: 'static>(&mut self, resource: T, world: &mut World) {
         world.store_resource(resource);
     }
-}
-
-impl Scheduler for ECS {
-    fn spin(&mut self) {
-        for system in self.systems.iter_mut() {
-            system.run(&self.world)
-        }
+    pub fn get_system_ids(&self) -> Vec<usize> {
+        self.systems.iter().enumerate().map(|(i,_)| i).collect()
+    }
+    pub fn run_system_by_id(&mut self, id: usize, world: &UnsafeCell<World>) {
+        self.systems[id].run(world);
     }
 }
 
