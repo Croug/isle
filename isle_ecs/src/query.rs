@@ -3,8 +3,8 @@ use std::{any::TypeId, cell::UnsafeCell, collections::HashSet, marker::PhantomDa
 use crate::{
     component::Component,
     ecs::{BorrowSignature, RefType, SystemParam, TypeSet},
-    world::World,
     entity::Entity,
+    world::World,
 };
 
 pub struct Query<'w, T, V = ()>

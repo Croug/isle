@@ -10,7 +10,7 @@ pub trait Scheduler {
     ) -> impl Schedule + 'static;
 }
 
-pub struct ScheduleIter<'a, T: Schedule> (&'a T);
+pub struct ScheduleIter<'a, T: Schedule>(&'a T);
 
 impl<T: Schedule> Iterator for ScheduleIter<'_, T> {
     type Item = usize;
@@ -24,7 +24,10 @@ pub trait Schedule {
     fn get_next(&self) -> Option<usize>;
     fn report_done(&self, item: usize);
 
-    fn iter<'a>(&'a self) -> ScheduleIter<'a, Self> where Self: Sized {
+    fn iter<'a>(&'a self) -> ScheduleIter<'a, Self>
+    where
+        Self: Sized,
+    {
         ScheduleIter(self)
     }
 }

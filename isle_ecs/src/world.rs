@@ -5,10 +5,7 @@ use std::{
 
 use hashbrown::HashMap;
 
-use crate::{
-    component::Component,
-    entity::Entity,
-};
+use crate::{component::Component, entity::Entity};
 
 pub struct World {
     components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,

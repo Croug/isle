@@ -3,13 +3,14 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use isle_ecs::{ecs::{IntoSystem, System, ECS}, entity::Entity, prelude::Component, world::World};
-
-use crate::{
-    executor::Executor,
-    plugin::EngineHook,
-    schedule::Scheduler,
+use isle_ecs::{
+    ecs::{IntoSystem, System, ECS},
+    entity::Entity,
+    prelude::Component,
+    world::World,
 };
+
+use crate::{executor::Executor, plugin::EngineHook, schedule::Scheduler};
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
@@ -120,9 +121,7 @@ pub struct FlowBuilder<S: Scheduler, E: Executor> {
     hooks: Vec<Box<dyn EngineHook<S, E>>>,
 }
 
-impl<S: Scheduler, E: Executor>
-    FlowBuilder<S, E>
-{
+impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
     pub fn with_scheduler(mut self, scheduler: S) -> Self {
         self.scheduler = Some(scheduler);
         self
@@ -140,9 +139,7 @@ impl<S: Scheduler, E: Executor>
         plugin(self)
     }
     pub fn build(self) -> Flow<S, E> {
-        if let (Some(scheduler), Some(executor)) =
-            (self.scheduler, self.executor)
-        {
+        if let (Some(scheduler), Some(executor)) = (self.scheduler, self.executor) {
             Flow {
                 world: UnsafeCell::new(World::new()),
                 ecs: UnsafeCell::new(ECS::new()),

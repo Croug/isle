@@ -1,7 +1,11 @@
-use std::{cell::UnsafeCell, sync::atomic::Ordering};
 use isle_ecs::{ecs::ECS, world::World};
+use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
-use crate::{executor::Executor, flow::FlowBuilder, schedule::{Schedule, Scheduler}};
+use crate::{
+    executor::Executor,
+    flow::FlowBuilder,
+    schedule::{Schedule, Scheduler},
+};
 
 #[allow(unused_variables)]
 pub trait EngineHook<S: Scheduler, E: Executor> {
@@ -83,7 +87,12 @@ impl crate::schedule::Schedule for isle_ecs::schedule::Schedule {
 }
 
 impl crate::executor::Executor for isle_ecs::executor::Executor {
-    fn run<T: Schedule + Sized>(&mut self, ecs: &UnsafeCell<ECS>, world: &UnsafeCell<World>, schedule: &T) {
+    fn run<T: Schedule + Sized>(
+        &mut self,
+        ecs: &UnsafeCell<ECS>,
+        world: &UnsafeCell<World>,
+        schedule: &T,
+    ) {
         for system_id in schedule.iter() {
             let ecs = unsafe { &mut *ecs.get() };
             ecs.run_system_by_id(system_id, world);
@@ -91,9 +100,7 @@ impl crate::executor::Executor for isle_ecs::executor::Executor {
     }
 }
 
-impl crate::schedule::Scheduler
-    for isle_ecs::schedule::Scheduler
-{
+impl crate::schedule::Scheduler for isle_ecs::schedule::Scheduler {
     fn get_schedule(
         &mut self,
         _world: &UnsafeCell<World>,
@@ -107,7 +114,6 @@ impl crate::schedule::Scheduler
 type Flow = FlowBuilder<isle_ecs::schedule::Scheduler, isle_ecs::executor::Executor>;
 
 pub fn default_plugins(flow: Flow) -> Flow {
-    flow
-    .with_executor(isle_ecs::executor::Executor)
-    .with_scheduler(isle_ecs::schedule::Scheduler)
+    flow.with_executor(isle_ecs::executor::Executor)
+        .with_scheduler(isle_ecs::schedule::Scheduler)
 }

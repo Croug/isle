@@ -26,8 +26,7 @@ impl EntityFactory for DefaultEntityFactory {
     fn make_entity(&self) -> Entity {
         Entity(
             self.generation.load(Ordering::SeqCst),
-            self.next_entity
-                .fetch_add(1, Ordering::SeqCst),
+            self.next_entity.fetch_add(1, Ordering::SeqCst),
         )
     }
 

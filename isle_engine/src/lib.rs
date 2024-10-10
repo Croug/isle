@@ -1,4 +1,3 @@
-
 pub trait Scheduler {
     fn spin(&mut self);
 }
