@@ -1,11 +1,6 @@
-use isle_ecs::{ecs::ECS, world::World};
-use std::{cell::UnsafeCell, sync::atomic::Ordering};
+use isle_ecs::world::World;
 
-use crate::{
-    executor::Executor,
-    flow::FlowBuilder,
-    schedule::{Schedule, Scheduler},
-};
+use crate::{executor::Executor, flow::FlowBuilder, schedule::Scheduler};
 
 #[allow(unused_variables)]
 pub trait EngineHook<S: Scheduler, E: Executor> {
@@ -75,39 +70,6 @@ pub trait AsyncEngineHook<T: 'static, W: World, S: Scheduler<W, T>, E: Executor<
         executor: &mut E,
     ) -> impl std::future::Future<Output = ()> + Send {
         async {}
-    }
-}
-
-impl crate::schedule::Schedule for isle_ecs::schedule::Schedule {
-    fn get_next(&self) -> Option<usize> {
-        let next = self.next.fetch_add(1, Ordering::SeqCst);
-        self.systems.get(next).copied()
-    }
-    fn report_done(&self, _item: usize) {}
-}
-
-impl crate::executor::Executor for isle_ecs::executor::Executor {
-    fn run<T: Schedule + Sized>(
-        &mut self,
-        ecs: &UnsafeCell<ECS>,
-        world: &UnsafeCell<World>,
-        schedule: &T,
-    ) {
-        for system_id in schedule.iter() {
-            let ecs = unsafe { &mut *ecs.get() };
-            ecs.run_system_by_id(system_id, world);
-        }
-    }
-}
-
-impl crate::schedule::Scheduler for isle_ecs::schedule::Scheduler {
-    fn get_schedule(
-        &mut self,
-        _world: &UnsafeCell<World>,
-        ecs: &UnsafeCell<ECS>,
-    ) -> impl crate::schedule::Schedule + 'static {
-        let ecs = unsafe { &*ecs.get() };
-        isle_ecs::schedule::Schedule::from_ecs(ecs)
     }
 }
 

@@ -1,4 +1,4 @@
-use std::cell::UnsafeCell;
+use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
 use isle_ecs::{ecs::ECS, world::World};
 
@@ -30,4 +30,23 @@ pub trait Schedule {
     {
         ScheduleIter(self)
     }
+}
+
+impl Scheduler for isle_ecs::schedule::Scheduler {
+    fn get_schedule(
+        &mut self,
+        _world: &UnsafeCell<World>,
+        ecs: &UnsafeCell<ECS>,
+    ) -> impl crate::schedule::Schedule + 'static {
+        let ecs = unsafe { &*ecs.get() };
+        isle_ecs::schedule::Schedule::from_ecs(ecs)
+    }
+}
+
+impl Schedule for isle_ecs::schedule::Schedule {
+    fn get_next(&self) -> Option<usize> {
+        let next = self.next.fetch_add(1, Ordering::SeqCst);
+        self.systems.get(next).copied()
+    }
+    fn report_done(&self, _item: usize) {}
 }
