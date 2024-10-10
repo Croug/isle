@@ -13,18 +13,16 @@ pub mod prelude {
 }
 
 pub mod defaults {
-    type Identifier = usize;
-    type World = isle_ecs::world::World;
     type Scheduler = isle_ecs::schedule::Scheduler;
-    type Executor = isle_ecs::ecs::ECS;
+    type Executor = isle_ecs::executor::Executor;
 
     pub trait DefaultPlugins {
         fn with_default_plugins(self) -> Self;
     }
 
-    impl DefaultPlugins for isle_engine::flow::FlowBuilder<Identifier, World, Scheduler, Executor> {
+    impl DefaultPlugins for isle_engine::flow::FlowBuilder<Scheduler, Executor> {
         fn with_default_plugins(self) -> Self {
-            self.with_plugin(isle_ecs::plugin::ecs_plugin)
+            self.with_plugin(isle_engine::plugin::default_plugins)
         }
     }
 }

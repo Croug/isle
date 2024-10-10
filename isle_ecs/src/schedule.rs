@@ -5,8 +5,8 @@ use crate::ecs::ECS;
 pub struct Scheduler;
 
 pub struct Schedule {
-    pub(crate) systems: Vec<usize>,
-    pub(crate) next: AtomicUsize,
+    pub systems: Vec<usize>,
+    pub next: AtomicUsize,
 }
 
 impl Schedule {

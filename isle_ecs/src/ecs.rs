@@ -6,10 +6,11 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::component::Component;
-
-use super::world::World;
-use isle_engine::entity::Entity;
+use crate::{
+    component::Component,
+    world::World,
+    entity::Entity,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RefType {

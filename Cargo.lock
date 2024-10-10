@@ -50,7 +50,6 @@ version = "0.1.0"
 dependencies = [
  "hashbrown",
  "isle_ecs_macros",
- "isle_engine",
 ]
 
 [[package]]
@@ -71,6 +70,9 @@ dependencies = [
 [[package]]
 name = "isle_engine"
 version = "0.1.0"
+dependencies = [
+ "isle_ecs",
+]
 
 [[package]]
 name = "once_cell"

@@ -63,14 +63,14 @@ fn my_resource_system(res: Res<MyResource>) {
 }
 
 fn my_query_system(
-    _query: Query<(
+    query: Query<(
         Entity,
         &MyComponentOne,
         &MyComponentFour,
         Option<&MyComponentTwo>,
     )>,
 ) {
-    for (entity, one, four, two) in _query.iter() {
+    for (entity, one, four, two) in query.iter() {
         println!("<query_system> Entity: {entity:?}, One: {one:?}, Two: {two:?}, Four: {four:?}");
     }
 }

@@ -1,11 +1,10 @@
 use std::{any::TypeId, cell::UnsafeCell, collections::HashSet, marker::PhantomData};
 
-use isle_engine::entity::Entity;
-
 use crate::{
     component::Component,
     ecs::{BorrowSignature, RefType, SystemParam, TypeSet},
     world::World,
+    entity::Entity,
 };
 
 pub struct Query<'w, T, V = ()>

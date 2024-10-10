@@ -1,7 +1,9 @@
 use std::cell::UnsafeCell;
 
-use crate::world::World;
+use isle_ecs::{ecs::ECS, world::World};
 
-pub trait Executor<T, W: World> {
-    fn run(&mut self, world: &UnsafeCell<W>, identifier: T);
+use crate::schedule::Schedule;
+
+pub trait Executor {
+    fn run<T: Schedule + Sized>(&mut self, ecs: &UnsafeCell<ECS>, world: &UnsafeCell<World>, schedule: &T);
 }

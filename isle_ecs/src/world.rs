@@ -5,9 +5,10 @@ use std::{
 
 use hashbrown::HashMap;
 
-use isle_engine::entity::Entity;
-
-use super::component::Component;
+use crate::{
+    component::Component,
+    entity::Entity,
+};
 
 pub struct World {
     components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,
