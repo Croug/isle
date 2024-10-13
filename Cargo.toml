@@ -4,7 +4,7 @@ members = [
     "isle_ecs",
     "isle_ecs/macros",
     "isle_engine",
-    "isle_editor",
+    "isle_editor", "geode", "isle_math",
 ]
 
 resolver = "2"
