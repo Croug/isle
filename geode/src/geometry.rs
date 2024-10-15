@@ -10,14 +10,15 @@ pub enum GeometryType {
 }
 
 pub struct Mesh {
-    geometry_type: GeometryType,
-    vertices: Vec<Vec3>,
-    normals: Vec<Vec3>,
-    uvs: Vec<Vec2>,
+    pub(crate) geometry_type: GeometryType,
+    pub(crate) vertices: Vec<Vec3>,
+    pub(crate) normals: Vec<Vec3>,
+    pub(crate) uvs: Vec<Vec2>,
 }
 
 pub struct GpuMesh {
     vertex_buffer: wgpu::Buffer,
+    instance_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
 }
@@ -29,13 +30,44 @@ pub enum GeometryState {
 }
 
 pub struct Geometry {
-    file_source: PathBuf,
-    state: GeometryState,
+    pub(crate) file_source: PathBuf,
+    pub(crate) state: GeometryState,
+    pub(crate) instances: Vec<Option<(wgpu::Buffer, Vec<GeometryInstance>)>>,
+}
+
+impl Geometry {
+    pub fn vertex_buffer(&self) -> &wgpu::Buffer {
+        if let GeometryState::Gpu(mesh) = &self.state {
+            &mesh.vertex_buffer
+        } else {
+            panic!("Geometry not loaded into GPU memory")
+        }
+    }
+    pub fn instance_buffer(&self, material_id: usize) -> &wgpu::Buffer {
+        &self.instances[material_id].as_ref().unwrap().0
+    }
+    pub fn index_buffer(&self) -> &wgpu::Buffer {
+        if let GeometryState::Gpu(mesh) = &self.state {
+            &mesh.index_buffer
+        } else {
+            panic!("Geometry not loaded into GPU memory")
+        }
+    }
+    pub fn num_instances(&self, material_id: usize) -> usize {
+        self.instances[material_id].as_ref().unwrap().1.len()
+    }
+    pub fn num_indices(&self) -> u32 {
+        if let GeometryState::Gpu(mesh) = &self.state {
+            mesh.num_indices
+        } else {
+            panic!("Geometry not loaded into GPU memory")
+        }
+    }
 }
 
 pub struct GeometryInstance {
-    geometry_id: usize,
-    material_id: usize,
-    texture_id: usize,
-    transform: Mat4<f32>,
+    pub(crate) geometry_id: usize,
+    pub(crate) material_id: usize,
+    pub(crate) texture_id: usize,
+    pub(crate) transform: Mat4<f32>,
 }
