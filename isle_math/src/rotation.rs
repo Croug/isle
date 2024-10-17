@@ -5,8 +5,8 @@ pub mod quaternion {
 
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
-    impl Into<Mat4> for Quaternion {
-        fn into(self) -> Mat4 {
+    impl Quaternion {
+        pub fn to_mat4(&self) -> Mat4 {
             let xx = self.0 * self.0;
             let yy = self.1 * self.1;
             let zz = self.2 * self.2;
@@ -25,6 +25,12 @@ pub mod quaternion {
             ])
         }
     }
+
+    impl Into<Mat4> for Quaternion {
+        fn into(self) -> Mat4 {
+            self.to_mat4()
+        }
+    }
 }
 
 pub enum Rotation {
@@ -32,10 +38,10 @@ pub enum Rotation {
     Quaternion(quaternion::Quaternion),
 }
 
-impl Into<Mat4> for Rotation {
-    fn into(self) -> Mat4 {
+impl Rotation {
+    pub fn to_mat4(&self) -> Mat4 {
         match self {
-            Rotation::Quaternion(quaternion) => quaternion.into(),
+            Rotation::Quaternion(quaternion) => quaternion.to_mat4(),
             Rotation::Euler(euler) => {
                 Matrix([
                     [1.0, 0.0, 0.0, 0.0],
@@ -57,6 +63,12 @@ impl Into<Mat4> for Rotation {
                 ])
             }
         }
+    }
+}
+
+impl Into<Mat4> for Rotation {
+    fn into(self) -> Mat4 {
+        self.to_mat4()
     }
 }
 
