@@ -2,7 +2,7 @@ use std::ops::Mul;
 
 use crate::rotation::Rotation;
 
-use super::vector::Vec3;
+use super::vector::d3::Vec3;
 pub struct Matrix<const R: usize, const C: usize>(pub [[f32; C]; R]);
 
 pub type Mat4 = Matrix<4, 4>;

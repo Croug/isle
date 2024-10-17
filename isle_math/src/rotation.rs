@@ -1,4 +1,4 @@
-use crate::{matrix::{Mat4, Matrix}, vector::Vec3};
+use crate::{matrix::{Mat4, Matrix}, vector::d3::Vec3};
 
 pub mod quaternion {
     use crate::matrix::{Mat4, Matrix};

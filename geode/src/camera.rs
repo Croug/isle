@@ -1,4 +1,4 @@
-use isle_math::{matrix::Mat4, rotation::Rotation, vector::{Vec2, Vec3}};
+use isle_math::{matrix::Mat4, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}};
 
 use crate::texture::Texture;
 

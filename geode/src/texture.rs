@@ -1,6 +1,7 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use isle_math::vector::Vec2;
+use image::{GenericImageView, ImageError};
+use isle_math::vector::d2::Vec2;
 
 pub enum TextureSource {
     Disk(PathBuf),
@@ -27,7 +28,7 @@ pub enum TextureState {
 pub struct Texture {
     source: TextureSource,
     state: TextureState,
-    size: winit::dpi::PhysicalSize<u32>,
+    size: Vec2,
 }
 
 impl Texture {
@@ -71,7 +72,7 @@ impl Texture {
         Self {
             source: TextureSource::Internal("Depth Texture"),
             state: TextureState::Gpu(GpuTexture { texture, view, sampler }),
-            size: winit::dpi::PhysicalSize::new(size.width, size.height),
+            size: Vec2(size.width as f32, size.height as f32),
         }
     }
 

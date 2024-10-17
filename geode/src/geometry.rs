@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use isle_math::{matrix::Mat4, vector::{Vec2, Vec3}};
+use isle_math::{matrix::Mat4, vector::{d2::Vec2, d3::Vec3}};
 
 pub enum GeometryType {
     Lines(Vec<usize>),
