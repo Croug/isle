@@ -66,8 +66,8 @@ impl Mat4 {
         ])
     }
 
-    pub fn transform(scale: Vec3, rotation: Rotation, translation: Vec3) -> Self {
-        Self::scale(scale) * rotation.into() * Self::translation(translation)
+    pub fn transform(scale: Vec3, rotation: &Rotation, translation: Vec3) -> Self {
+        Self::scale(scale) * rotation.to_mat4() * Self::translation(translation)
     }
 }
 
