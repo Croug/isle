@@ -1,13 +1,15 @@
 use std::ops::Mul;
 
+use crate::rotation::Rotation;
+
 use super::vector::Vec3;
-pub struct Matrix<const R: usize, const C: usize>([[f32; C]; R]);
+pub struct Matrix<const R: usize, const C: usize>(pub [[f32; C]; R]);
 
 pub type Mat4 = Matrix<4, 4>;
 pub type Mat3 = Matrix<3, 3>;
 pub type Mat2 = Matrix<2, 2>;
 
-impl Matrix<4, 4> {
+impl Mat4 {
     pub fn identity() -> Self {
         Self([
             [1.0, 0.0, 0.0, 0.0],
@@ -44,6 +46,28 @@ impl Matrix<4, 4> {
             [z.0, z.1, z.2, -z.dot(&eye)],
             [0.0, 0.0, 0.0, 1.0],
         ])
+    }
+
+    pub fn translation(vector: Vec3) -> Self {
+        Matrix([
+            [1.0, 0.0, 0.0, vector.0],
+            [0.0, 1.0, 0.0, vector.1],
+            [0.0, 0.0, 1.0, vector.2],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
+
+    pub fn scale(vector: Vec3) -> Self {
+        Matrix([
+            [vector.0, 0.0, 0.0, 0.0],
+            [0.0, vector.1, 0.0, 0.0],
+            [0.0, 0.0, vector.2, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
+
+    pub fn transform(scale: Vec3, rotation: Rotation, translation: Vec3) -> Self {
+        Self::scale(scale) * rotation.into() * Self::translation(translation)
     }
 }
 
