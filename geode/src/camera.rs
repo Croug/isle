@@ -1,4 +1,4 @@
-use isle_math::{matrix::Mat4, vector::{Vec2, Vec3}};
+use isle_math::{matrix::Mat4, rotation::Rotation, vector::{Vec2, Vec3}};
 
 use crate::texture::Texture;
 
@@ -9,13 +9,8 @@ pub struct Camera {
     pub(crate) depth_texture: Texture,
     pub(crate) bind_group: wgpu::BindGroup,
     pub(crate) viewport: Vec2,
-    pub(crate) eye: Vec3,
-    pub(crate) target: Vec3,
-    pub(crate) aspect: f32,
-    pub(crate) fovy: f32,
-    pub(crate) znear: f32,
-    pub(crate) zfar: f32,
     pub(crate) view: Mat4,
+    pub(crate) projection: Mat4,
 }
 
 impl Camera {
@@ -53,5 +48,13 @@ impl Camera {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
 
         render_pass
+    }
+
+    pub fn update_view(&mut self, scale: Vec3, rotation: &Rotation, translation: Vec3) {
+        self.view = Mat4::transform(scale, rotation, translation);
+    }
+
+    pub fn update_projection_perspective(&mut self, fovy: f32, znear: f32, zfar: f32) {
+        self.projection = Mat4::perspective_projection(self.viewport.0 / self.viewport.1, fovy, znear, zfar);
     }
 }
