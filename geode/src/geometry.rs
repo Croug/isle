@@ -69,5 +69,5 @@ pub struct GeometryInstance {
     pub(crate) geometry_id: usize,
     pub(crate) material_id: usize,
     pub(crate) texture_id: usize,
-    pub(crate) transform: Mat4<f32>,
+    pub(crate) transform: Mat4,
 }

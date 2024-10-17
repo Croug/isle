@@ -15,7 +15,7 @@ pub struct Camera {
     pub(crate) fovy: f32,
     pub(crate) znear: f32,
     pub(crate) zfar: f32,
-    pub(crate) view: Mat4<f32>,
+    pub(crate) view: Mat4,
 }
 
 impl Camera {
