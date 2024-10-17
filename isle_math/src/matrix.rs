@@ -32,6 +32,19 @@ impl Matrix<4, 4> {
             [0.0 , 0.0 , -1.0, 0.0 ],
         ])
     }
+
+    pub fn look_at(eye: Vec3, target: Vec3, up: Vec3) -> Self {
+        let z = (eye - target).norm();
+        let x = up.cross(&z).norm();
+        let y = z.cross(&x);
+
+        Matrix([
+            [x.0, x.1, x.2, -x.dot(&eye)],
+            [y.0, y.1, y.2, -y.dot(&eye)],
+            [z.0, z.1, z.2, -z.dot(&eye)],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
 }
 
 impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<U,C>> for Matrix<R, U> {
