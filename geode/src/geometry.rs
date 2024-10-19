@@ -37,10 +37,10 @@ pub enum GeometryState {
     Gpu(GpuMesh),
 }
 
-pub struct Geometry {
+pub(crate) struct Geometry {
     pub(crate) source: GeometrySource,
     pub(crate) state: GeometryState,
-    pub(crate) instances: Vec<Option<(wgpu::Buffer, Vec<GeometryInstance>)>>,
+    pub(crate) instances: Vec<Option<Vec<GeometryInstance>>>,
 }
 
 impl Geometry {
@@ -65,8 +65,19 @@ impl Geometry {
             panic!("Geometry not loaded into GPU memory")
         }
     }
-    pub fn instance_buffer(&self, material_id: usize) -> &wgpu::Buffer {
-        &self.instances[material_id].as_ref().unwrap().0
+    pub fn instance_buffer(&self, material_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
+        let data =
+            self.instances[material_id].as_ref().unwrap().iter()
+            .map(|instance| instance.to_raw())
+            .collect::<Vec<_>>();
+
+        device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some(format!("{} Instance Buffer", self.name()).as_str()),
+                contents: bytemuck::cast_slice(&data),
+                usage: wgpu::BufferUsages::VERTEX
+            }
+        )
     }
     pub fn indices(&self) -> &[usize] {
         if let GeometryState::Memory(mesh) = &self.state {
@@ -88,7 +99,7 @@ impl Geometry {
         }
     }
     pub fn num_instances(&self, material_id: usize) -> usize {
-        self.instances[material_id].as_ref().unwrap().1.len()
+        self.instances[material_id].as_ref().unwrap().len()
     }
     pub fn num_indices(&self) -> u32 {
         if let GeometryState::Gpu(mesh) = &self.state {
@@ -223,5 +234,9 @@ impl GeometryInstance {
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &GeometryInstance::ATTRIBS,
         }
+    }
+
+    pub fn to_raw(&self) -> [[f32;4];4] {
+        self.transform.0
     }
 }
