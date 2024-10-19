@@ -147,15 +147,21 @@ impl Neg for &Vec2 {
     }
 }
 
+impl Into<(f32, f32)> for Vec2 {
+    fn into(self) -> (f32, f32) {
+        (self.0, self.1)
+    }
+}
+
 impl From<(f32, f32)> for Vec2 {
     fn from((x, y): (f32, f32)) -> Self {
         Self(x, y)
     }
 }
 
-impl Into<(f32, f32)> for Vec2 {
-    fn into(self) -> (f32, f32) {
-        (self.0, self.1)
+impl Into<(u32, u32)> for Vec2 {
+    fn into(self) -> (u32, u32) {
+        (self.0 as u32, self.1 as u32)
     }
 }
 
@@ -165,8 +171,14 @@ impl From<(u32, u32)> for Vec2 {
     }
 }
 
-impl Into<(u32, u32)> for Vec2 {
-    fn into(self) -> (u32, u32) {
-        (self.0 as u32, self.1 as u32)
+impl Into<[f32; 2]> for Vec2 {
+    fn into(self) -> [f32; 2] {
+        [self.0, self.1]
+    }
+}
+
+impl From<[f32; 2]> for Vec2 {
+    fn from([x, y]: [f32; 2]) -> Self {
+        Self(x, y)
     }
 }

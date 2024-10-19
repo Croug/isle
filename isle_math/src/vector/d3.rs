@@ -168,3 +168,15 @@ impl Neg for &Vec3 {
         (*self).neg()
     }
 }
+
+impl Into<[f32; 3]> for Vec3 {
+    fn into(self) -> [f32; 3] {
+        [self.0, self.1, self.2]
+    }
+}
+
+impl From<[f32; 3]> for Vec3 {
+    fn from(array: [f32; 3]) -> Self {
+        Self(array[0], array[1], array[2])
+    }
+}
