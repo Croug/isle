@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bytemuck = { version = "1.19.0", features = ["derive"] }
 image = "0.25.2"
 isle_math = { path = "../isle_math" }
 log = "0.4.22"
