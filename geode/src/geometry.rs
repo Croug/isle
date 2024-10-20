@@ -37,14 +37,14 @@ pub enum GeometryState {
     Gpu(GpuMesh),
 }
 
-pub(crate) struct Geometry {
+pub struct Geometry {
     pub(crate) source: GeometrySource,
     pub(crate) state: GeometryState,
     pub(crate) instances: Vec<Option<Vec<GeometryInstance>>>,
 }
 
 impl Geometry {
-    pub fn vertices(&self) -> Vec<Vertex> {
+    pub(crate) fn vertices(&self) -> Vec<Vertex> {
         let mesh = match &self.state {
             GeometryState::Memory(mesh) => mesh,
             _ => panic!("Geometry not loaded into memory")
@@ -213,9 +213,7 @@ impl Geometry {
 }
 
 pub struct GeometryInstance {
-    pub(crate) geometry_id: usize,
     pub(crate) material_id: usize,
-    pub(crate) texture_id: usize,
     pub(crate) transform: Mat4,
 }
 

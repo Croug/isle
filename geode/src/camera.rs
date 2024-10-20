@@ -14,6 +14,25 @@ pub struct Camera {
 }
 
 impl Camera {
+    pub fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }
+                ],
+                label: Some("Camera Bind Group Layout"),
+            }
+        )
+    }
     pub fn begin_render_pass<'a>(&'a self, encoder: &'a mut wgpu::CommandEncoder, view: &wgpu::TextureView, surface_view: Option<&wgpu::TextureView>) -> wgpu::RenderPass {
         let surface_attachment = surface_view.map(|view| wgpu::RenderPassColorAttachment {
             view,

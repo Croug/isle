@@ -1,8 +1,32 @@
 use std::error::Error;
 
+use wgpu::VertexBufferLayout;
 use winit::window::Window;
 
 use crate::{camera::Camera, geometry::{Geometry, GeometryInstance}, material::Material, texture::Texture};
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub(crate) struct Vertex {
+    pub(crate) position: [f32; 3],
+    pub(crate) normal: [f32; 3],
+    pub(crate) uv: [f32; 2],
+}
+
+impl Vertex {
+    const ATTRIBS: [wgpu::VertexAttribute; 3] =
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2];
+
+    pub fn desc() -> VertexBufferLayout<'static> {
+        use std::mem;
+
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBS,
+        }
+    }
+}
 
 pub struct Renderer<'a> {
     surface: wgpu::Surface<'a>, // contains unsafe reference to window
@@ -10,7 +34,7 @@ pub struct Renderer<'a> {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
-    depth_texture: Texture,
+    camera_bind_group_layout: wgpu::BindGroupLayout,
     window: &'a Window, // must be last to drop last
 
     default_camera: usize,
@@ -66,7 +90,7 @@ impl<'a> Renderer<'a>{
             desired_maximum_frame_latency: 2,
         };
 
-        let depth_texture = Texture::create_depth_texture(&device, &config);
+        let camera_bind_group_layout = Camera::bind_group_layout(&device);
 
         Ok(Self{
             surface,
@@ -75,7 +99,7 @@ impl<'a> Renderer<'a>{
             config,
             size,
             window,
-            depth_texture,
+            camera_bind_group_layout,
 
             default_camera: 0,
 
@@ -86,12 +110,20 @@ impl<'a> Renderer<'a>{
         })
     }
 
-    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn config(&self) -> &wgpu::SurfaceConfiguration {
+        &self.config
+    }
+
+    pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+        &self.camera_bind_group_layout
+    }
+
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
-            self.depth_texture = Texture::create_depth_texture(&self.device, &self.config);
+            self.cameras[self.default_camera].depth_texture = Texture::create_depth_texture(&self.device, &self.config);
             self.surface.configure(&self.device, &self.config);
         }
     }
@@ -101,7 +133,7 @@ impl<'a> Renderer<'a>{
             .filter(|geometry| geometry.instances[material_id].is_some())
             .for_each(|geometry| {
                 render_pass.set_vertex_buffer(0, geometry.vertex_buffer().slice(..));
-                render_pass.set_vertex_buffer(1, geometry.instance_buffer(material_id).slice(..));
+                render_pass.set_vertex_buffer(1, geometry.instance_buffer(material_id, &self.device).slice(..));
                 render_pass.set_index_buffer(geometry.index_buffer().slice(..), wgpu::IndexFormat::Uint32);
                 render_pass.draw_indexed(0..geometry.num_indices(), 0, 0..geometry.num_instances(material_id) as _);
             });
