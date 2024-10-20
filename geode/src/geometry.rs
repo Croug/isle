@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 
 use isle_math::{
-    matrix::Mat4,
-    vector::{d2::Vec2, d3::Vec3},
+    matrix::Mat4, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
 };
 use wgpu::util::DeviceExt;
 
@@ -212,10 +211,31 @@ impl Geometry {
             instances: Vec::new(),
         }
     }
+
+    pub fn instantiate(&mut self, material_id: usize, material_instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) -> usize {
+        let transform = Mat4::transform(scale, &rotation, translation);
+        self.instances[material_id]
+            .get_or_insert_with(Vec::new)
+            .push(GeometryInstance {
+                instance_id: material_instance_id,
+                transform,
+            });
+
+        self.instances[material_id].as_ref().unwrap().len() - 1
+    }
+
+    pub fn update_instance(&mut self, material_id: usize, instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) {
+        let transform = Mat4::transform(scale, &rotation, translation);
+        self.instances[material_id]
+            .as_mut()
+            .unwrap()
+            .get_mut(instance_id)
+            .unwrap()
+            .transform = transform;
+    }
 }
 
 pub struct GeometryInstance {
-    pub(crate) material_id: usize,
     pub(crate) instance_id: usize,
     pub(crate) transform: Mat4,
 }
