@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use image::{GenericImageView, ImageError};
 use isle_math::vector::d2::Vec2;
 
+use crate::material::IntoBindGroup;
+
 pub enum TextureSource {
     Disk(PathBuf),
     Internal(&'static str),
@@ -232,11 +234,33 @@ impl Texture {
         }
     }
 
-    pub fn get_view(&self) -> &wgpu::TextureView {
+    pub fn view(&self) -> &wgpu::TextureView {
         if let TextureState::Gpu(GpuTexture { view, .. }) = &self.state {
             &view
         } else {
             panic!("Texture is not in GPU state");
         }
+    }
+    pub fn sampler(&self) -> &wgpu::Sampler {
+        if let TextureState::Gpu(GpuTexture { sampler, .. }) = &self.state {
+            &sampler
+        } else {
+            panic!("Texture is not in GPU state");
+        }
+    }
+}
+
+impl IntoBindGroup for Texture {
+    fn into_bind_group(&self, next_index: u32) -> Vec<wgpu::BindGroupEntry> {
+        vec![
+            wgpu::BindGroupEntry {
+                binding: next_index,
+                resource: wgpu::BindingResource::TextureView(&self.view()),
+            },
+            wgpu::BindGroupEntry {
+                binding: next_index + 1,
+                resource: wgpu::BindingResource::Sampler(&self.sampler()),
+            }
+        ]
     }
 }

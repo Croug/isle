@@ -4,7 +4,12 @@ use crate::{
     texture::Texture,
 };
 
+pub trait IntoBindGroup {
+    fn into_bind_group(&self, next_index: u32) -> Vec<wgpu::BindGroupEntry>;
+}
+
 pub struct Material {
+    pub(crate) bind_group_layout: wgpu::BindGroupLayout,
     pub(crate) pipeline: wgpu::RenderPipeline,
     pub(crate) instances: Vec<MaterialInstance>,
 }
@@ -87,11 +92,39 @@ impl Material {
 
         Self {
             pipeline,
+            bind_group_layout,
             instances: Vec::new(),
         }
+    }
+
+    pub fn instantiate(&mut self, device: &wgpu::Device, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
+        let instance = MaterialInstance::new(device, self, label, entries.into_bind_group(0).as_slice());
+        self.instances.push(instance);
+        self.instances.len() - 1
     }
 }
 
 pub struct MaterialInstance {
     pub(crate) bind_group: wgpu::BindGroup,
+}
+
+impl MaterialInstance {
+    pub(crate) fn new(
+        device: &wgpu::Device,
+        material: &Material,
+        label: &'static str,
+        entries: &[wgpu::BindGroupEntry],
+    ) -> MaterialInstance {
+        let bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &material.bind_group_layout,
+                entries,
+                label: Some(label)
+            }
+        );
+
+        MaterialInstance {
+            bind_group,
+        }
+    }
 }

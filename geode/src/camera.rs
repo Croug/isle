@@ -160,7 +160,7 @@ impl Camera {
                 surface_attachment,
             ],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth_texture.get_view(),
+                view: &self.depth_texture.view(),
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0),
                     store: wgpu::StoreOp::Store,

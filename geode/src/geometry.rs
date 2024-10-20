@@ -70,11 +70,12 @@ impl Geometry {
             panic!("Geometry not loaded into GPU memory")
         }
     }
-    pub fn instance_buffer(&self, material_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
+    pub fn instance_buffer(&self, material_id: usize, instance_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
         let data = self.instances[material_id]
             .as_ref()
             .unwrap()
             .iter()
+            .filter(|instance| instance.instance_id == instance_id)
             .map(|instance| instance.to_raw())
             .collect::<Vec<_>>();
 
@@ -103,8 +104,12 @@ impl Geometry {
             panic!("Geometry not loaded into GPU memory")
         }
     }
-    pub fn num_instances(&self, material_id: usize) -> usize {
-        self.instances[material_id].as_ref().unwrap().len()
+    pub fn num_instances(&self, material_id: usize, instance_id: usize) -> usize {
+        let empty = Vec::new();
+        self.instances[material_id].as_ref().unwrap_or(&empty)
+            .iter()
+            .filter(|instance| instance.instance_id == instance_id)
+            .count()
     }
     pub fn num_indices(&self) -> u32 {
         if let GeometryState::Gpu(mesh) = &self.state {

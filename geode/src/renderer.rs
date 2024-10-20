@@ -158,17 +158,18 @@ impl<'a> Renderer<'a> {
     fn render_geometries_by_material<'r>(
         &self,
         material_id: usize,
+        instance_id: usize,
         render_pass: &mut wgpu::RenderPass<'r>,
     ) {
         self.geometries
             .iter()
-            .filter(|geometry| geometry.instances[material_id].is_some())
+            .filter(|geometry| geometry.num_instances(material_id, instance_id) > 0)
             .for_each(|geometry| {
                 render_pass.set_vertex_buffer(0, geometry.vertex_buffer().slice(..));
                 render_pass.set_vertex_buffer(
                     1,
                     geometry
-                        .instance_buffer(material_id, &self.device)
+                        .instance_buffer(material_id, instance_id, &self.device)
                         .slice(..),
                 );
                 render_pass
@@ -176,7 +177,7 @@ impl<'a> Renderer<'a> {
                 render_pass.draw_indexed(
                     0..geometry.num_indices(),
                     0,
-                    0..geometry.num_instances(material_id) as _,
+                    0..geometry.num_instances(material_id, instance_id) as _,
                 );
             });
     }
@@ -202,7 +203,7 @@ impl<'a> Renderer<'a> {
                     None
                 };
 
-                let view = self.textures[camera.texture_id].get_view();
+                let view = self.textures[camera.texture_id].view();
                 let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_texture);
 
                 camera.update_buffer(&self.queue);
@@ -213,9 +214,9 @@ impl<'a> Renderer<'a> {
                     .for_each(|(material_id, material)| {
                         render_pass.set_pipeline(&material.pipeline);
 
-                        material.instances.iter().for_each(|instance| {
+                        material.instances.iter().enumerate().for_each(|(instance_id, instance)| {
                             render_pass.set_bind_group(1, &instance.bind_group, &[]);
-                            self.render_geometries_by_material(material_id, &mut render_pass);
+                            self.render_geometries_by_material(material_id, instance_id, &mut render_pass);
                         });
                     })
             });
