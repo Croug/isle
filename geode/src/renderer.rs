@@ -1,9 +1,7 @@
-use std::error::Error;
-
 use wgpu::VertexBufferLayout;
 use winit::window::Window;
 
-use crate::{camera::Camera, geometry::{Geometry, GeometryInstance}, material::Material, texture::Texture};
+use crate::{camera::Camera, geometry::Geometry, material::Material, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -35,6 +33,8 @@ pub struct Renderer<'a> {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     camera_bind_group_layout: wgpu::BindGroupLayout,
+
+    #[allow(dead_code)]
     window: &'a Window, // must be last to drop last
 
     default_camera: usize,
