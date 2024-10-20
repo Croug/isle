@@ -37,6 +37,23 @@ impl Mat4 {
         ])
     }
 
+    pub fn orthographic_projection(left: f32, right: f32, bottom: f32, top: f32, znear: f32, zfar: f32) -> Self {
+        let a = 2.0 / (right - left);
+        let b = 2.0 / (top - bottom);
+        let c = -2.0 / (zfar - znear);
+
+        let tx = -(right + left) / (right - left);
+        let ty = -(top + bottom) / (top - bottom);
+        let tz = -(zfar + znear) / (zfar - znear);
+
+        Matrix([
+            [a, 0.0, 0.0, tx],
+            [0.0, b, 0.0, ty],
+            [0.0, 0.0, c, tz],
+            [0.0, 0.0, 0.0, 1.0],
+        ])
+    }
+
     pub fn look_at(eye: Vec3, target: Vec3, up: Vec3) -> Self {
         let z = (eye - target).norm();
         let x = up.cross(&z).norm();
