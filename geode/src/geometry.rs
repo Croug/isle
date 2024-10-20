@@ -211,6 +211,7 @@ impl Geometry {
 
 pub struct GeometryInstance {
     pub(crate) material_id: usize,
+    pub(crate) instance_id: usize,
     pub(crate) transform: Mat4,
 }
 

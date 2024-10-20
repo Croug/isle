@@ -1,7 +1,10 @@
+use std::vec;
+
+use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 use winit::window::Window;
 
-use crate::{camera::Camera, geometry::Geometry, material::Material, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::Material, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -37,7 +40,7 @@ pub struct Renderer<'a> {
     #[allow(dead_code)]
     window: &'a Window, // must be last to drop last
 
-    default_camera: usize,
+    main_camera: usize,
 
     cameras: Vec<Camera>,
     geometries: Vec<Geometry>,
@@ -98,7 +101,7 @@ impl<'a> Renderer<'a> {
 
         let camera_bind_group_layout = Camera::bind_group_layout(&device);
 
-        Ok(Self {
+        let mut out = Self {
             surface,
             device,
             queue,
@@ -107,17 +110,34 @@ impl<'a> Renderer<'a> {
             window,
             camera_bind_group_layout,
 
-            default_camera: 0,
+            main_camera: 0,
 
             cameras: Vec::new(),
             geometries: Vec::new(),
             textures: Vec::new(),
             materials: Vec::new(),
-        })
+        };
+
+        let main_camera = Camera::new(
+            &mut out,
+            &CameraCreationSettings {
+                label: "Main Camera",
+                viewport: Vec2(size.width as f32, size.height as f32),
+                ..Default::default()
+            }
+        );
+
+        out.cameras.push(main_camera);
+
+        Ok(out)
     }
 
     pub fn config(&self) -> &wgpu::SurfaceConfiguration {
         &self.config
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
     }
 
     pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
@@ -129,8 +149,8 @@ impl<'a> Renderer<'a> {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
-            self.cameras[self.default_camera].depth_texture =
-                Texture::create_depth_texture(&self.device, &self.config);
+            self.cameras[self.main_camera].depth_texture =
+                Texture::create_depth_texture(&self.device, Vec2(self.config.width as f32, self.config.height as f32));
             self.surface.configure(&self.device, &self.config);
         }
     }
@@ -176,7 +196,7 @@ impl<'a> Renderer<'a> {
             .iter()
             .enumerate()
             .for_each(|(camera_id, camera)| {
-                let surface_texture = if camera_id == self.default_camera {
+                let surface_texture = if camera_id == self.main_camera {
                     Some(&view)
                 } else {
                     None
@@ -184,6 +204,8 @@ impl<'a> Renderer<'a> {
 
                 let view = self.textures[camera.texture_id].get_view();
                 let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_texture);
+
+                camera.update_buffer(&self.queue);
 
                 self.materials
                     .iter()
@@ -202,5 +224,10 @@ impl<'a> Renderer<'a> {
         frame.present();
 
         Ok(())
+    }
+
+    pub(crate) fn add_texture(&mut self, texture: Texture) -> usize {
+        self.textures.push(texture);
+        self.textures.len() - 1
     }
 }

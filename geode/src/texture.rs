@@ -144,11 +144,11 @@ impl Texture {
 
     pub fn create_depth_texture(
         device: &wgpu::Device,
-        config: &wgpu::SurfaceConfiguration,
+        size: Vec2,
     ) -> Self {
         let size = wgpu::Extent3d {
-            width: config.width.max(1),
-            height: config.height.max(1),
+            width: size.0.max(1.0) as u32,
+            height: size.1.max(1.0) as u32,
             depth_or_array_layers: 1,
         };
         let desc = wgpu::TextureDescriptor {
@@ -185,6 +185,50 @@ impl Texture {
                 sampler,
             }),
             size: Vec2(size.width as f32, size.height as f32),
+        }
+    }
+
+    pub fn create_camera_texture(
+        size: Vec2,
+        device: &wgpu::Device,
+        label: &'static str,
+    ) -> Self {
+        let size_wgpu = wgpu::Extent3d {
+            width: size.0 as u32,
+            height: size.1 as u32,
+            depth_or_array_layers: 1, 
+        };
+        let desc = wgpu::TextureDescriptor {
+            label: Some(label),
+            size: size_wgpu,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        };
+        let texture = device.create_texture(&desc);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        Self {
+            source: TextureSource::Internal(label),
+            state: TextureState::Gpu(GpuTexture {
+                texture,
+                view,
+                sampler,
+            }),
+            size,
         }
     }
 
