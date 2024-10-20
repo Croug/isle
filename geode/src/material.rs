@@ -15,8 +15,8 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn default_shader(renderer: &Renderer, device: &wgpu::Device) -> Self {
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    pub fn default_shader(renderer: &Renderer) -> Self {
+        let bind_group_layout = renderer.device().create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Default Bind Group Layout"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -39,14 +39,14 @@ impl Material {
         });
 
         let shader =
-            device.create_shader_module(wgpu::include_wgsl!("../assets/default_shader.wgsl"));
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            renderer.device().create_shader_module(wgpu::include_wgsl!("../assets/default_shader.wgsl"));
+        let pipeline_layout = renderer.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Default Pipeline Layout"),
             bind_group_layouts: &[renderer.camera_bind_group_layout(), &bind_group_layout],
             push_constant_ranges: &[],
         });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = renderer.device().create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Default Render Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
