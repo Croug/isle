@@ -1,4 +1,4 @@
-use std::ops::{Div, Mul, Add, Sub, Neg};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec2(pub f32, pub f32);

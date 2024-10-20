@@ -1,4 +1,7 @@
-use crate::{matrix::{Mat4, Matrix}, vector::d3::Vec3};
+use crate::{
+    matrix::{Mat4, Matrix},
+    vector::d3::Vec3,
+};
 
 pub mod quaternion {
     use crate::matrix::{Mat4, Matrix};
@@ -48,14 +51,12 @@ impl Rotation {
                     [0.0, euler.0.cos(), -euler.0.sin(), 0.0],
                     [0.0, euler.0.sin(), euler.0.cos(), 0.0],
                     [0.0, 0.0, 0.0, 1.0],
-                ]) *
-                Matrix([
+                ]) * Matrix([
                     [euler.1.cos(), 0.0, euler.1.sin(), 0.0],
                     [0.0, 1.0, 0.0, 0.0],
                     [-euler.1.sin(), 0.0, euler.1.cos(), 0.0],
                     [0.0, 0.0, 0.0, 1.0],
-                ]) *
-                Matrix([
+                ]) * Matrix([
                     [euler.2.cos(), -euler.2.sin(), 0.0, 0.0],
                     [euler.2.sin(), euler.2.cos(), 0.0, 0.0],
                     [0.0, 0.0, 1.0, 0.0],

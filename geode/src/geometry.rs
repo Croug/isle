@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
-use isle_math::{matrix::Mat4, vector::{d2::Vec2, d3::Vec3}};
+use isle_math::{
+    matrix::Mat4,
+    vector::{d2::Vec2, d3::Vec3},
+};
 use wgpu::util::DeviceExt;
 
 use crate::renderer::Vertex;
@@ -9,7 +12,7 @@ pub enum GeometryType {
     Lines(Vec<usize>),
     Tris(Vec<usize>),
     Quads(Vec<usize>),
-    Points
+    Points,
 }
 
 pub enum GeometrySource {
@@ -47,16 +50,18 @@ impl Geometry {
     pub(crate) fn vertices(&self) -> Vec<Vertex> {
         let mesh = match &self.state {
             GeometryState::Memory(mesh) => mesh,
-            _ => panic!("Geometry not loaded into memory")
+            _ => panic!("Geometry not loaded into memory"),
         };
 
-        mesh.vertices.iter().enumerate().map(|(i, vertex)| {
-            Vertex {
+        mesh.vertices
+            .iter()
+            .enumerate()
+            .map(|(i, vertex)| Vertex {
                 position: vertex.clone().into(),
                 normal: mesh.normals.as_ref().unwrap()[i].clone().into(),
                 uv: mesh.uvs[i].clone().into(),
-            }
-        }).collect()
+            })
+            .collect()
     }
     pub fn vertex_buffer(&self) -> &wgpu::Buffer {
         if let GeometryState::Gpu(mesh) = &self.state {
@@ -66,18 +71,18 @@ impl Geometry {
         }
     }
     pub fn instance_buffer(&self, material_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
-        let data =
-            self.instances[material_id].as_ref().unwrap().iter()
+        let data = self.instances[material_id]
+            .as_ref()
+            .unwrap()
+            .iter()
             .map(|instance| instance.to_raw())
             .collect::<Vec<_>>();
 
-        device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some(format!("{} Instance Buffer", self.name()).as_str()),
-                contents: bytemuck::cast_slice(&data),
-                usage: wgpu::BufferUsages::VERTEX
-            }
-        )
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(format!("{} Instance Buffer", self.name()).as_str()),
+            contents: bytemuck::cast_slice(&data),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
     }
     pub fn indices(&self) -> &[usize] {
         if let GeometryState::Memory(mesh) = &self.state {
@@ -117,21 +122,17 @@ impl Geometry {
     }
 
     pub fn load_to_gpu(&mut self, device: &wgpu::Device) {
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some(format!("{} Vertex Buffer", self.name()).as_str()),
-                contents: bytemuck::cast_slice(self.vertices().as_slice()),
-                usage: wgpu::BufferUsages::VERTEX
-            }
-        );
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(format!("{} Vertex Buffer", self.name()).as_str()),
+            contents: bytemuck::cast_slice(self.vertices().as_slice()),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some(format!("{} Index Buffer", self.name()).as_str()),
-                contents: bytemuck::cast_slice(self.indices()),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(format!("{} Index Buffer", self.name()).as_str()),
+            contents: bytemuck::cast_slice(self.indices()),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         self.state = GeometryState::Gpu(GpuMesh {
             vertex_buffer,
@@ -181,12 +182,8 @@ impl Geometry {
             Vec3(-half_size.0, half_size.1, half_size.2),
         ];
         let indices = vec![
-            0, 1, 2, 2, 3, 0,
-            1, 5, 6, 6, 2, 1,
-            7, 6, 5, 5, 4, 7,
-            4, 0, 3, 3, 7, 4,
-            4, 5, 1, 1, 0, 4,
-            3, 2, 6, 6, 7, 3,
+            0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 7, 6, 5, 5, 4, 7, 4, 0, 3, 3, 7, 4, 4, 5, 1, 1, 0,
+            4, 3, 2, 6, 6, 7, 3,
         ];
         let uvs = vec![
             Vec2(0.0, 0.0),
@@ -218,13 +215,12 @@ pub struct GeometryInstance {
 }
 
 impl GeometryInstance {
-    const ATTRIBS: [wgpu::VertexAttribute; 4] =
-        wgpu::vertex_attr_array![
-            3 => Float32x4,
-            4 => Float32x4,
-            5 => Float32x4,
-            6 => Float32x4
-        ];
+    const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+        3 => Float32x4,
+        4 => Float32x4,
+        5 => Float32x4,
+        6 => Float32x4
+    ];
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
@@ -234,7 +230,7 @@ impl GeometryInstance {
         }
     }
 
-    pub fn to_raw(&self) -> [[f32;4];4] {
+    pub fn to_raw(&self) -> [[f32; 4]; 4] {
         self.transform.0
     }
 }

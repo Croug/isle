@@ -30,10 +30,10 @@ impl Mat4 {
         let b = -(zfar * znear) / (zfar - znear);
 
         Matrix([
-            [sx  , 0.0 , 0.0 , 0.0 ],
-            [0.0 , sy  , 0.0 , 0.0 ],
-            [0.0 , 0.0 , a   , b   ],
-            [0.0 , 0.0 , -1.0, 0.0 ],
+            [sx, 0.0, 0.0, 0.0],
+            [0.0, sy, 0.0, 0.0],
+            [0.0, 0.0, a, b],
+            [0.0, 0.0, -1.0, 0.0],
         ])
     }
 
@@ -73,10 +73,10 @@ impl Mat4 {
     }
 }
 
-impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<U,C>> for Matrix<R, U> {
+impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<U, C>> for Matrix<R, U> {
     type Output = Matrix<R, C>;
 
-    fn mul(self, rhs: Matrix<U,C>) -> Self::Output {
+    fn mul(self, rhs: Matrix<U, C>) -> Self::Output {
         let mut result = [[0.0; C]; R];
 
         for i in 0..R {
