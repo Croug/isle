@@ -12,6 +12,7 @@ pub enum TextureSource {
 }
 
 pub struct GpuTexture {
+    #[allow(dead_code)]
     texture: wgpu::Texture,
     view: wgpu::TextureView,
     sampler: wgpu::Sampler,
@@ -251,8 +252,9 @@ impl Texture {
 }
 
 impl IntoBindGroup for Texture {
-    fn into_bind_group(&self, next_index: u32) -> Vec<wgpu::BindGroupEntry> {
-        vec![
+    fn into_bind_group<'a>(&'a self, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>) {
+        let next_index = bindings.len() as u32;
+        bindings.extend(vec![
             wgpu::BindGroupEntry {
                 binding: next_index,
                 resource: wgpu::BindingResource::TextureView(&self.view()),
@@ -261,6 +263,6 @@ impl IntoBindGroup for Texture {
                 binding: next_index + 1,
                 resource: wgpu::BindingResource::Sampler(&self.sampler()),
             }
-        ]
+        ]);
     }
 }

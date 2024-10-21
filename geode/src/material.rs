@@ -5,7 +5,13 @@ use crate::{
 };
 
 pub trait IntoBindGroup {
-    fn into_bind_group(&self, next_index: u32) -> Vec<wgpu::BindGroupEntry>;
+    fn into_bind_group<'a>(&'a self, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>);
+}
+
+impl<T: Fn(&mut Vec<wgpu::BindGroupEntry>)> IntoBindGroup for T {
+    fn into_bind_group(&self, bindings: &mut Vec<wgpu::BindGroupEntry>) {
+        self(bindings);
+    }
 }
 
 pub struct Material {
@@ -98,7 +104,9 @@ impl Material {
     }
 
     pub fn instantiate(&mut self, device: &wgpu::Device, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
-        let instance = MaterialInstance::new(device, self, label, entries.into_bind_group(0).as_slice());
+        let mut bindings = Vec::new();
+        entries.into_bind_group(&mut bindings);
+        let instance = MaterialInstance::new(device, self, label, bindings.as_slice());
         self.instances.push(instance);
         self.instances.len() - 1
     }

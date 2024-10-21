@@ -208,7 +208,7 @@ impl Geometry {
                 normals: None,
                 uvs,
             }),
-            instances: Vec::new(),
+            instances: vec![None],
         }
     }
 

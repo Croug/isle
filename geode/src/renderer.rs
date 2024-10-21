@@ -4,7 +4,7 @@ use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 use winit::window::Window;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::Material, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::{self, Geometry}, material::{IntoBindGroup, Material}, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -140,6 +140,14 @@ impl<'a> Renderer<'a> {
         &self.device
     }
 
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn texture(&self, texture_id: usize) -> &Texture {
+        &self.textures[texture_id]
+    }
+
     pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
         &self.camera_bind_group_layout
     }
@@ -227,8 +235,30 @@ impl<'a> Renderer<'a> {
         Ok(())
     }
 
-    pub(crate) fn add_texture(&mut self, texture: Texture) -> usize {
+    pub fn add_texture(&mut self, texture: Texture) -> usize {
         self.textures.push(texture);
         self.textures.len() - 1
+    }
+    
+    pub fn add_geometry(&mut self, geometry: Geometry) -> usize {
+        self.geometries.push(geometry);
+        self.geometries.len() - 1
+    }
+
+    pub fn instantiate_geometry(&mut self, geometry_id: usize, material_id: usize, material_instance_id: usize, translation: isle_math::vector::d3::Vec3, rotation: isle_math::rotation::Rotation, scale: isle_math::vector::d3::Vec3) -> usize {
+        self.geometries[geometry_id].instantiate(material_id, material_instance_id, translation, rotation, scale)
+    }
+
+    pub fn update_geometry_instance(&mut self, geometry_id: usize, material_id: usize, instance_id: usize, translation: isle_math::vector::d3::Vec3, rotation: isle_math::rotation::Rotation, scale: isle_math::vector::d3::Vec3) {
+        self.geometries[geometry_id].update_instance(material_id, instance_id, translation, rotation, scale);
+    }
+
+    pub fn add_material(&mut self, material: Material) -> usize {
+        self.materials.push(material);
+        self.materials.len() - 1
+    }
+
+    pub fn instantiate_material(&mut self, material_id: usize, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
+        self.materials[material_id].instantiate(&self.device, label, entries)
     }
 }
