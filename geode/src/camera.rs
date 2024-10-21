@@ -37,6 +37,7 @@ pub enum CameraProjection {
         znear: f32,
         zfar: f32,
     },
+    None,
 }
 
 pub struct CameraCreationSettings {
@@ -77,7 +78,9 @@ impl Camera {
                 Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, fovy, znear, zfar),
 
             CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
-                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar)
+                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
+
+            CameraProjection::None => Mat4::identity(),
         };
 
         let buffer = renderer.device().create_buffer_init(
@@ -136,16 +139,7 @@ impl Camera {
         &'a self,
         encoder: &'a mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
-        surface_view: Option<&wgpu::TextureView>,
     ) -> wgpu::RenderPass {
-        let surface_attachment = surface_view.map(|view| wgpu::RenderPassColorAttachment {
-            view,
-            resolve_target: None,
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(self.clear_color),
-                store: wgpu::StoreOp::Store,
-            },
-        });
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(format!("Render Pass: {}", self.label).as_str()),
             color_attachments: &[
@@ -157,7 +151,6 @@ impl Camera {
                         store: wgpu::StoreOp::Store,
                     },
                 }),
-                surface_attachment,
             ],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.depth_texture.view(),
@@ -187,7 +180,9 @@ impl Camera {
                 Mat4::perspective_projection(self.viewport.0 / self.viewport.1, fovy, znear, zfar),
 
             CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
-                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar)
+                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
+
+            CameraProjection::None => Mat4::identity(),
         };
 
         self.dirty.store(true, Ordering::SeqCst);
