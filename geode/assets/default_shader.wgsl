@@ -1,12 +1,12 @@
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
+    // @location(1) normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) normal: vec3<f32>,
+    // @location(0) normal: vec3<f32>,
     @location(1) uv: vec2<f32>,
 };
 
@@ -38,8 +38,10 @@ fn vs_main(
 
     var out: VertexOutput;
     out.uv = mesh.uv;
-    out.normal = mesh.normal;
-    out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
+    // out.normal = mesh.normal;
+    // out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
+
+    out.position = vec4<f32>(mesh.position, 1.0);
 
     return out;
 }

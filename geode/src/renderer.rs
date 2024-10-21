@@ -3,13 +3,13 @@ use std::vec;
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings, CameraProjection}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub(crate) struct Vertex {
     pub(crate) position: [f32; 3],
-    pub(crate) normal: [f32; 3],
+    // pub(crate) normal: [f32; 3],
     pub(crate) uv: [f32; 2],
 }
 
@@ -121,6 +121,7 @@ impl<'a> Renderer<'a> {
             &CameraCreationSettings {
                 label: "Main Camera",
                 viewport: size,
+                projection: CameraProjection::None,
                 ..Default::default()
             }
         );
@@ -153,8 +154,8 @@ impl<'a> Renderer<'a> {
     pub fn resize(&mut self, new_size: Vec2) {
         if new_size.0 > 0. && new_size.0 > 0. {
             self.size = new_size;
-            self.config.width = new_size.1 as u32;
-            self.config.height = new_size.0 as u32;
+            self.config.width = new_size.0 as u32;
+            self.config.height = new_size.1 as u32;
             self.cameras[self.main_camera].depth_texture =
                 Texture::create_depth_texture(&self.device, Vec2(self.config.width as f32, self.config.height as f32));
             self.surface.configure(&self.device, &self.config);
@@ -203,14 +204,12 @@ impl<'a> Renderer<'a> {
             .iter()
             .enumerate()
             .for_each(|(camera_id, camera)| {
-                let surface_texture = if camera_id == self.main_camera {
-                    Some(&view)
+                let view = if camera_id == self.main_camera {
+                    &view
                 } else {
-                    None
+                    &self.cameras[self.main_camera].depth_texture.view()
                 };
-
-                let view = self.textures[camera.texture_id].view();
-                let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_texture);
+                let mut render_pass = camera.begin_render_pass(&mut encoder, view);
 
                 camera.update_buffer(&self.queue);
 

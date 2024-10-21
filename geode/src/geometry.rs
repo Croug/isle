@@ -23,7 +23,7 @@ pub enum GeometrySource {
 pub struct Mesh {
     pub(crate) geometry_type: GeometryType,
     pub(crate) vertices: Vec<Vec3>,
-    pub(crate) normals: Option<Vec<Vec3>>,
+    // pub(crate) normals: Option<Vec<Vec3>>,
     pub(crate) uvs: Vec<Vec2>,
 }
 
@@ -57,7 +57,7 @@ impl Geometry {
             .enumerate()
             .map(|(i, vertex)| Vertex {
                 position: vertex.clone().into(),
-                normal: mesh.normals.as_ref().unwrap()[i].clone().into(),
+                // normal: mesh.normals.as_ref().unwrap()[i].clone().into(),
                 uv: mesh.uvs[i].clone().into(),
             })
             .collect()
@@ -171,7 +171,7 @@ impl Geometry {
             state: GeometryState::Memory(Mesh {
                 geometry_type: GeometryType::Tris(indices),
                 vertices,
-                normals: None,
+                // normals: None,
                 uvs,
             }),
             instances: vec![None],
@@ -210,7 +210,7 @@ impl Geometry {
             state: GeometryState::Memory(Mesh {
                 geometry_type: GeometryType::Tris(indices),
                 vertices,
-                normals: None,
+                // normals: None,
                 uvs,
             }),
             instances: vec![None],
