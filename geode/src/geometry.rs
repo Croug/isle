@@ -8,9 +8,9 @@ use wgpu::util::DeviceExt;
 use crate::renderer::Vertex;
 
 pub enum GeometryType {
-    Lines(Vec<usize>),
-    Tris(Vec<usize>),
-    Quads(Vec<usize>),
+    Lines(Vec<u32>),
+    Tris(Vec<u32>),
+    Quads(Vec<u32>),
     Points,
 }
 
@@ -84,7 +84,7 @@ impl Geometry {
             usage: wgpu::BufferUsages::VERTEX,
         })
     }
-    pub fn indices(&self) -> &[usize] {
+    pub fn indices(&self) -> &[u32] {
         if let GeometryState::Memory(mesh) = &self.state {
             match &mesh.geometry_type {
                 GeometryType::Lines(indices) => indices,
@@ -132,6 +132,9 @@ impl Geometry {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
+        let indices = self.indices();
+        let num_indices = indices.len() as u32;
+
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(format!("{} Index Buffer", self.name()).as_str()),
             contents: bytemuck::cast_slice(self.indices()),
@@ -141,25 +144,27 @@ impl Geometry {
         self.state = GeometryState::Gpu(GpuMesh {
             vertex_buffer,
             index_buffer,
-            num_indices: self.num_indices(),
+            num_indices,
         });
     }
 
     pub fn plane(size: Vec2) -> Self {
         let half_size = size / 2.0;
         let vertices = vec![
-            Vec3(-half_size.0, 0.0, -half_size.1),
-            Vec3(half_size.0, 0.0, -half_size.1),
-            Vec3(half_size.0, 0.0, half_size.1),
-            Vec3(-half_size.0, 0.0, half_size.1),
+            Vec3(-half_size.0, -half_size.1, 0.0),
+            Vec3(half_size.0, -half_size.1, 0.0),
+            Vec3(half_size.0, half_size.1, 0.0),
+            Vec3(-half_size.0, half_size.1, 0.0),
         ];
         let indices = vec![0, 1, 2, 2, 3, 0];
         let uvs = vec![
-            Vec2(0.0, 0.0),
-            Vec2(1.0, 0.0),
-            Vec2(1.0, 1.0),
             Vec2(0.0, 1.0),
+            Vec2(1.0, 1.0),
+            Vec2(1.0, 0.0),
+            Vec2(0.0, 0.0),
         ];
+
+        println!("Plane: {:?}", vertices);
 
         Self {
             source: GeometrySource::Internal("Plane"),
@@ -169,7 +174,7 @@ impl Geometry {
                 normals: None,
                 uvs,
             }),
-            instances: Vec::new(),
+            instances: vec![None],
         }
     }
 
