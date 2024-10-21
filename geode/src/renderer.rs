@@ -2,9 +2,8 @@ use std::vec;
 
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
-use winit::window::Window;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::{self, Geometry}, material::{IntoBindGroup, Material}, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -34,11 +33,11 @@ pub struct Renderer<'a> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
+    size: Vec2,
     camera_bind_group_layout: wgpu::BindGroupLayout,
 
     #[allow(dead_code)]
-    window: &'a Window, // must be last to drop last
+    window: wgpu::SurfaceTarget<'a>,
 
     main_camera: usize,
 
@@ -49,15 +48,14 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    pub async fn new(window: &'a Window) -> Result<Self, wgpu::CreateSurfaceError> {
-        let size = window.inner_size();
-
+    pub async fn new(window: impl Into<wgpu::SurfaceTarget<'a>> + Copy, size: Vec2) -> Result<Self, wgpu::CreateSurfaceError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
 
         let surface = instance.create_surface(window)?;
+        let window = window.into();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -91,8 +89,8 @@ impl<'a> Renderer<'a> {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: size.width,
-            height: size.height,
+            width: size.0 as u32,
+            height: size.1 as u32,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
@@ -122,7 +120,7 @@ impl<'a> Renderer<'a> {
             &mut out,
             &CameraCreationSettings {
                 label: "Main Camera",
-                viewport: Vec2(size.width as f32, size.height as f32),
+                viewport: size,
                 ..Default::default()
             }
         );
@@ -152,11 +150,11 @@ impl<'a> Renderer<'a> {
         &self.camera_bind_group_layout
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
+    pub fn resize(&mut self, new_size: Vec2) {
+        if new_size.0 > 0. && new_size.0 > 0. {
             self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
+            self.config.width = new_size.1 as u32;
+            self.config.height = new_size.0 as u32;
             self.cameras[self.main_camera].depth_texture =
                 Texture::create_depth_texture(&self.device, Vec2(self.config.width as f32, self.config.height as f32));
             self.surface.configure(&self.device, &self.config);
