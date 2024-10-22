@@ -48,7 +48,8 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    pub async fn new(window: impl Into<wgpu::SurfaceTarget<'a>> + Copy, size: Vec2) -> Result<Self, wgpu::CreateSurfaceError> {
+    pub async fn new(window: impl Into<wgpu::SurfaceTarget<'a>> + Copy, camera_settings: CameraCreationSettings) -> Result<Self, wgpu::CreateSurfaceError> {
+        let size = camera_settings.viewport;
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -120,9 +121,7 @@ impl<'a> Renderer<'a> {
             &mut out,
             &CameraCreationSettings {
                 label: "Main Camera",
-                viewport: size,
-                projection: CameraProjection::None,
-                ..Default::default()
+                ..camera_settings
             }
         );
 
