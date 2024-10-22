@@ -1,57 +1,67 @@
-use std::ops::Mul;
+use std::{f32::consts::PI, ops::Mul};
 
 use crate::rotation::Rotation;
-
 use super::vector::d3::Vec3;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Matrix<const R: usize, const C: usize>(pub [[f32; C]; R]);
+pub struct Matrix<const C: usize, const R: usize>(pub [[f32; R]; C]);
 
 pub type Mat4 = Matrix<4, 4>;
 pub type Mat3 = Matrix<3, 3>;
 pub type Mat2 = Matrix<2, 2>;
 
-impl<const R: usize, const C: usize> Matrix<R, C> {
-    pub fn transpose(&self) -> Matrix<C, R> {
-        let mut result = [[0.0; R]; C];
+impl<const C: usize, const R: usize> Matrix<C, R> {
+    pub fn transpose(&self) -> Matrix<R, C> {
+        let mut result = Matrix::<R, C>([[0.0; C]; R]);
 
         for i in 0..R {
             for j in 0..C {
-                result[j][i] = self.0[i][j];
+                result.set(j, i, self.get(i, j));
             }
         }
 
-        Matrix(result)
+        result
+    }
+
+    pub fn get(&self, row: usize, col: usize) -> f32 {
+        self.0[col][row]
+    }
+
+    pub fn set(&mut self, row: usize, col: usize, value: f32) {
+        self.0[col][row] = value;
     }
 }
 
 impl Mat4 {
     pub fn identity() -> Self {
         Self([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 0.0], // Column 0
+            [0.0, 1.0, 0.0, 0.0], // Column 1
+            [0.0, 0.0, 1.0, 0.0], // Column 2
+            [0.0, 0.0, 0.0, 1.0], // Column 3
         ])
     }
 
     pub fn perspective_projection(aspect: f32, fovy: f32, znear: f32, zfar: f32) -> Self {
-        let f = 1.0 / (fovy / 2.0).tan();
-        let sx = f / aspect;
-        let sy = f;
-
-        let a = -zfar / (zfar - znear);
-        let b = -(zfar * znear) / (zfar - znear);
+        let f = 1.0 / (0.5 * fovy.to_radians()).tan(); // f = cot(fovy / 2)
+        let i = 1.0 / (znear - zfar); // Common factor
 
         Matrix([
-            [sx, 0.0, 0.0, 0.0],
-            [0.0, sy, 0.0, 0.0],
-            [0.0, 0.0, a, b],
-            [0.0, 0.0, -1.0, 0.0],
+            [f / aspect, 0.0, 0.0, 0.0],                                      // Column 0
+            [0.0, f, 0.0, 0.0],                                                // Column 1
+            [0.0, 0.0, (zfar + znear) * i, (2.0 * zfar * znear) * i],       // Column 2
+            [0.0, 0.0, -1.0, 0.0],                                             // Column 3
         ])
     }
 
-    pub fn orthographic_projection(left: f32, right: f32, bottom: f32, top: f32, znear: f32, zfar: f32) -> Self {
+    pub fn orthographic_projection(
+        left: f32,
+        right: f32,
+        bottom: f32,
+        top: f32,
+        znear: f32,
+        zfar: f32,
+    ) -> Self {
         let a = 2.0 / (right - left);
         let b = 2.0 / (top - bottom);
         let c = -2.0 / (zfar - znear);
@@ -61,41 +71,43 @@ impl Mat4 {
         let tz = -(zfar + znear) / (zfar - znear);
 
         Matrix([
-            [a, 0.0, 0.0, tx],
-            [0.0, b, 0.0, ty],
-            [0.0, 0.0, c, tz],
-            [0.0, 0.0, 0.0, 1.0],
+            [a, 0.0, 0.0, 0.0],   // Column 0
+            [0.0, b, 0.0, 0.0],   // Column 1
+            [0.0, 0.0, c, 0.0],   // Column 2
+            [tx, ty, tz, 1.0],    // Column 3
         ])
     }
 
     pub fn look_at(eye: Vec3, target: Vec3, up: Vec3) -> Self {
-        let z = (eye - target).norm();
+        let z = (target - eye).norm();
         let x = up.cross(&z).norm();
         let y = z.cross(&x);
 
         Matrix([
-            [x.0, x.1, x.2, -x.dot(&eye)],
-            [y.0, y.1, y.2, -y.dot(&eye)],
-            [z.0, z.1, z.2, -z.dot(&eye)],
-            [0.0, 0.0, 0.0, 1.0],
+            [x.0, y.0, z.0, 0.0],                       // Column 0
+            [x.1, y.1, z.1, 0.0],                       // Column 1
+            [x.2, y.2, z.2, 0.0],                       // Column 2
+            [-x.dot(&eye), -y.dot(&eye), -z.dot(&eye), 1.0], // Column 3
         ])
+
+        // Matrix::identity()
     }
 
     pub fn translation(vector: Vec3) -> Self {
         Matrix([
-            [1.0, 0.0, 0.0, vector.0],
-            [0.0, 1.0, 0.0, vector.1],
-            [0.0, 0.0, 1.0, vector.2],
-            [0.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 0.0],                // Column 0
+            [0.0, 1.0, 0.0, 0.0],                // Column 1
+            [0.0, 0.0, 1.0, 0.0],                // Column 2
+            [vector.0, vector.1, vector.2, 1.0], // Column 3
         ])
     }
 
     pub fn scale(vector: Vec3) -> Self {
         Matrix([
-            [vector.0, 0.0, 0.0, 0.0],
-            [0.0, vector.1, 0.0, 0.0],
-            [0.0, 0.0, vector.2, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
+            [vector.0, 0.0, 0.0, 0.0], // Column 0
+            [0.0, vector.1, 0.0, 0.0], // Column 1
+            [0.0, 0.0, vector.2, 0.0], // Column 2
+            [0.0, 0.0, 0.0, 1.0],      // Column 3
         ])
     }
 
@@ -104,38 +116,43 @@ impl Mat4 {
     }
 }
 
-impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<U, C>> for Matrix<R, U> {
+impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<C, U>> for Matrix<U, R> {
     type Output = Matrix<R, C>;
 
-    fn mul(self, rhs: Matrix<U, C>) -> Self::Output {
-        let mut result = [[0.0; C]; R];
+    fn mul(self, rhs: Matrix<C, U>) -> Self::Output {
+        let mut result = Matrix::<R, C>([[0.0; C]; R]);
 
         for i in 0..R {
             for j in 0..C {
+                let mut sum = 0.0;
                 for k in 0..U {
-                    result[i][j] += self.0[i][k] * rhs.0[k][j];
+                    sum += self.get(i, k) * rhs.get(k, j);
                 }
+                result.set(i, j, sum);
             }
         }
 
-        Matrix(result)
+        result
     }
 }
+
 
 impl Mul<Vec3> for Mat4 {
     type Output = Matrix<4, 1>;
 
     fn mul(self, rhs: Vec3) -> Self::Output {
-        let mut result = [[0.0; 1]; 4];
+        let mut result = Matrix::<4, 1>([[0.0; 1]; 4]);
 
         let vec4 = [rhs.0, rhs.1, rhs.2, 1.0];
 
         for i in 0..4 {
+            let mut sum = 0.0;
             for j in 0..4 {
-                result[i][0] += self.0[i][j] * vec4[j];
+                sum += self.get(j, i) * vec4[j];
             }
+            result.set(i, 0, sum);
         }
 
-        Matrix(result)
+        result
     }
 }
