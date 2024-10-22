@@ -11,6 +11,20 @@ pub type Mat4 = Matrix<4, 4>;
 pub type Mat3 = Matrix<3, 3>;
 pub type Mat2 = Matrix<2, 2>;
 
+impl<const R: usize, const C: usize> Matrix<R, C> {
+    pub fn transpose(&self) -> Matrix<C, R> {
+        let mut result = [[0.0; R]; C];
+
+        for i in 0..R {
+            for j in 0..C {
+                result[j][i] = self.0[i][j];
+            }
+        }
+
+        Matrix(result)
+    }
+}
+
 impl Mat4 {
     pub fn identity() -> Self {
         Self([
@@ -86,7 +100,7 @@ impl Mat4 {
     }
 
     pub fn transform(scale: Vec3, rotation: &Rotation, translation: Vec3) -> Self {
-        Self::scale(scale) * rotation.to_mat4() * Self::translation(translation)
+        Self::translation(translation) * rotation.to_mat4() * Self::scale(scale)
     }
 }
 
@@ -101,6 +115,24 @@ impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<U, C>> for Matri
                 for k in 0..U {
                     result[i][j] += self.0[i][k] * rhs.0[k][j];
                 }
+            }
+        }
+
+        Matrix(result)
+    }
+}
+
+impl Mul<Vec3> for Mat4 {
+    type Output = Matrix<4, 1>;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        let mut result = [[0.0; 1]; 4];
+
+        let vec4 = [rhs.0, rhs.1, rhs.2, 1.0];
+
+        for i in 0..4 {
+            for j in 0..4 {
+                result[i][0] += self.0[i][j] * vec4[j];
             }
         }
 
