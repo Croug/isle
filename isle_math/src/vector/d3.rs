@@ -23,6 +23,14 @@ impl Vec3 {
     pub fn norm(&self) -> Self {
         self / self.mag()
     }
+
+    pub fn zero() -> Self {
+        Self(0.0, 0.0, 0.0)
+    }
+
+    pub fn identity() -> Self {
+        Self(1.0, 1.0, 1.0)
+    }
 }
 
 impl Div for Vec3 {
