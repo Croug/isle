@@ -39,9 +39,7 @@ fn vs_main(
     var out: VertexOutput;
     out.uv = mesh.uv;
     // out.normal = mesh.normal;
-    // out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
-
-    out.position = vec4<f32>(mesh.position, 1.0);
+    out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
 
     return out;
 }
