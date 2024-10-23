@@ -63,19 +63,20 @@ impl Mat4 {
     ) -> Self {
         let a = 2.0 / (right - left);
         let b = 2.0 / (top - bottom);
-        let c = -2.0 / (zfar - znear);
+        let c = 1.0 / (zfar - znear);
 
         let tx = -(right + left) / (right - left);
         let ty = -(top + bottom) / (top - bottom);
-        let tz = -(zfar + znear) / (zfar - znear);
+        let tz = -znear / (zfar - znear);
 
         Matrix([
             [a, 0.0, 0.0, 0.0], // Column 0
             [0.0, b, 0.0, 0.0], // Column 1
             [0.0, 0.0, c, 0.0], // Column 2
-            [tx, ty, tz, 1.0],  // Column 3
+            [tx, ty, tz, 1.0],   // Column 3
         ])
     }
+
 
     pub fn look_at(eye: Vec3, target: Vec3, up: Vec3) -> Self {
         let z = (target - eye).norm();
