@@ -9,6 +9,9 @@ pub mod quaternion {
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
     impl Quaternion {
+        pub fn identity() -> Self {
+            Self(0.0, 0.0, 0.0, 1.0)
+        }
         pub fn to_mat4(&self) -> Mat4 {
             let xx = self.0 * self.0;
             let yy = self.1 * self.1;
@@ -42,6 +45,12 @@ pub enum Rotation {
 }
 
 impl Rotation {
+    pub fn quaternion_identity() -> Self {
+        Rotation::Quaternion(quaternion::Quaternion::identity())
+    }
+    pub fn euler_identity() -> Self {
+        Rotation::Euler(Vec3::zero())
+    }
     pub fn to_mat4(&self) -> Mat4 {
         match self {
             Rotation::Quaternion(quaternion) => quaternion.to_mat4(),
