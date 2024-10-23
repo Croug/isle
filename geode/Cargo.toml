@@ -8,4 +8,5 @@ bytemuck = { version = "1.19.0", features = ["derive"] }
 image = "0.25.2"
 isle_math = { path = "../isle_math" }
 log = "0.4.22"
+tobj = "4.0.2"
 wgpu = "22.1.0"

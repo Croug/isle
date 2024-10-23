@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use isle_math::{
     matrix::Mat4, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
 };
+use tobj::{load_obj, LoadError, LoadOptions};
 use wgpu::util::DeviceExt;
 
 use crate::renderer::Vertex;
@@ -25,6 +26,21 @@ pub struct Mesh {
     pub(crate) vertices: Vec<Vec3>,
     // pub(crate) normals: Option<Vec<Vec3>>,
     pub(crate) uvs: Vec<Vec2>,
+}
+
+impl From<tobj::Mesh> for Mesh {
+    fn from(value: tobj::Mesh) -> Self {
+        let num_positions = value.positions.len() / 3;
+        let num_uvs = value.texcoords.len() / 2;
+
+        assert_eq!(num_positions, num_uvs, "Number of positions and uvs must match\nVertices: {num_positions}\nUVs: {num_uvs}");
+
+        Self {
+            geometry_type: GeometryType::Tris(value.indices),
+            vertices: value.positions.chunks_exact(3).map(|v| Vec3(v[0], v[1], v[2])).collect(),
+            uvs: value.texcoords.chunks_exact(2).map(|v| Vec2(v[0], v[1])).collect(),
+        }
+    }
 }
 
 pub struct GpuMesh {
@@ -123,6 +139,31 @@ impl Geometry {
             GeometrySource::Internal(name) => name,
             GeometrySource::Dynamic(name) => name,
         }
+    }
+
+    pub fn load_to_mem(&mut self) -> Result<(), LoadError> {
+        let path = if let GeometrySource::Disk(path) = &self.source {
+            path
+        } else {
+            log::warn!(
+                "Attempted to load non-disk '{}' geometry to memory",
+                self.name()
+            );
+            return Ok(());
+        };
+
+        let (mut models, _) = load_obj(path, &LoadOptions {
+            single_index: true,
+            triangulate: true,
+            ignore_lines: true,
+            ignore_points: true,
+        })?;
+
+        let model = models.remove(0);
+
+        self.state = GeometryState::Memory(model.mesh.into());
+
+        Ok(())
     }
 
     pub fn load_to_gpu(&mut self, device: &wgpu::Device) {
