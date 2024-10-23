@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use isle_math::{
     matrix::Mat4,
-    rotation::{Angle, Rotation},
+    rotation::Angle,
     vector::{d2::Vec2, d3::Vec3},
 };
 use wgpu::{util::DeviceExt, BindGroupDescriptor};
@@ -55,12 +55,12 @@ impl Default for CameraCreationSettings {
             label: "Camera",
             clear_color: wgpu::Color::BLACK,
             viewport: Vec2(800.0, 600.0),
-            eye: Vec3(0.0, 170.0, -300.0),
+            eye: Vec3(0.0, 500., -500.0),
             target: Vec3(0.0, 0.0, 0.0),
             projection: CameraProjection::Perspective {
                 fovy: 60.0,
-                znear: 1.0,
-                zfar: 10000.0,
+                znear: 10.0,
+                zfar: 100000.0,
             },
         }
     }
