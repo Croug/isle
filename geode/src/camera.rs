@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use isle_math::{
     matrix::Mat4,
-    rotation::Rotation,
+    rotation::{Angle, Rotation},
     vector::{d2::Vec2, d3::Vec3},
 };
 use wgpu::{util::DeviceExt, BindGroupDescriptor};
@@ -75,7 +75,7 @@ impl Camera {
         let view = Mat4::look_at(settings.eye, settings.target, Vec3(0.0, 1.0, 0.0));
         let projection = match settings.projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
-                Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, fovy, znear, zfar),
+                Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
 
             CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
                 Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
@@ -169,15 +169,15 @@ impl Camera {
         render_pass
     }
 
-    pub fn update_view(&mut self, scale: Vec3, rotation: &Rotation, translation: Vec3) {
-        self.view = Mat4::transform(scale, rotation, translation);
+    pub fn update_view(&mut self, eye: Vec3, target: Vec3) {
+        self.view = Mat4::look_at(eye, target, Vec3(0.0, 1.0, 0.0));
         self.dirty.store(true, Ordering::SeqCst);
     }
 
     pub fn update_projection(&mut self, projection: CameraProjection) {
         self.projection = match projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
-                Mat4::perspective_projection(self.viewport.0 / self.viewport.1, fovy, znear, zfar),
+                Mat4::perspective_projection(self.viewport.0 / self.viewport.1, Angle::Degrees(fovy), znear, zfar),
 
             CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
                 Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
