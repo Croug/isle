@@ -1,7 +1,7 @@
-use std::{f32::consts::PI, ops::Mul};
+use std::ops::Mul;
 
-use crate::rotation::Rotation;
 use super::vector::d3::Vec3;
+use crate::rotation::{Angle, Rotation};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Matrix<const C: usize, const R: usize>(pub [[f32; R]; C]);
@@ -42,15 +42,14 @@ impl Mat4 {
         ])
     }
 
-    pub fn perspective_projection(aspect: f32, fovy: f32, znear: f32, zfar: f32) -> Self {
-        let f = 1.0 / (0.5 * fovy.to_radians()).tan(); // f = cot(fovy / 2)
-        let i = 1.0 / (znear - zfar); // Common factor
+    pub fn perspective_projection(aspect: f32, fovy: Angle, znear: f32, zfar: f32) -> Self {
+        let f = (fovy.to_radians() / 2.0).tan().recip();
 
         Matrix([
-            [f / aspect, 0.0, 0.0, 0.0],                                      // Column 0
-            [0.0, f, 0.0, 0.0],                                                // Column 1
-            [0.0, 0.0, (zfar + znear) * i, (2.0 * zfar * znear) * i],       // Column 2
-            [0.0, 0.0, -1.0, 0.0],                                             // Column 3
+            [f / aspect, 0.0, 0.0, 0.0],                     // Column 0
+            [0.0, f, 0.0, 0.0],                              // Column 1
+            [0.0, 0.0, zfar / (zfar - znear), 1.0],          // Column 2
+            [0.0, 0.0, -znear * zfar / (zfar - znear), 0.0], // Column 3
         ])
     }
 
@@ -71,10 +70,10 @@ impl Mat4 {
         let tz = -(zfar + znear) / (zfar - znear);
 
         Matrix([
-            [a, 0.0, 0.0, 0.0],   // Column 0
-            [0.0, b, 0.0, 0.0],   // Column 1
-            [0.0, 0.0, c, 0.0],   // Column 2
-            [tx, ty, tz, 1.0],    // Column 3
+            [a, 0.0, 0.0, 0.0], // Column 0
+            [0.0, b, 0.0, 0.0], // Column 1
+            [0.0, 0.0, c, 0.0], // Column 2
+            [tx, ty, tz, 1.0],  // Column 3
         ])
     }
 
@@ -84,9 +83,9 @@ impl Mat4 {
         let y = z.cross(&x);
 
         Matrix([
-            [x.0, y.0, z.0, 0.0],                       // Column 0
-            [x.1, y.1, z.1, 0.0],                       // Column 1
-            [x.2, y.2, z.2, 0.0],                       // Column 2
+            [x.0, y.0, z.0, 0.0],                            // Column 0
+            [x.1, y.1, z.1, 0.0],                            // Column 1
+            [x.2, y.2, z.2, 0.0],                            // Column 2
             [-x.dot(&eye), -y.dot(&eye), -z.dot(&eye), 1.0], // Column 3
         ])
 
@@ -116,26 +115,23 @@ impl Mat4 {
     }
 }
 
-impl<const R: usize, const C: usize, const U: usize> Mul<Matrix<C, U>> for Matrix<U, R> {
+impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matrix<U, R> {
     type Output = Matrix<R, C>;
 
     fn mul(self, rhs: Matrix<C, U>) -> Self::Output {
         let mut result = Matrix::<R, C>([[0.0; C]; R]);
 
-        for i in 0..R {
-            for j in 0..C {
-                let mut sum = 0.0;
+        for i in 0..C {
+            for j in 0..R {
                 for k in 0..U {
-                    sum += self.get(i, k) * rhs.get(k, j);
+                    result.0[i][j] += self.get(j, k) * rhs.get(k, i);
                 }
-                result.set(i, j, sum);
             }
         }
 
         result
     }
 }
-
 
 impl Mul<Vec3> for Mat4 {
     type Output = Matrix<4, 1>;
