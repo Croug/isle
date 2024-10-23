@@ -164,8 +164,6 @@ impl Geometry {
             Vec2(0.0, 0.0),
         ];
 
-        println!("Plane: {:?}", vertices);
-
         Self {
             source: GeometrySource::Internal("Plane"),
             state: GeometryState::Memory(Mesh {
@@ -191,18 +189,22 @@ impl Geometry {
             Vec3(-half_size.0, half_size.1, half_size.2),
         ];
         let indices = vec![
-            0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 7, 6, 5, 5, 4, 7, 4, 0, 3, 3, 7, 4, 4, 5, 1, 1, 0,
-            4, 3, 2, 6, 6, 7, 3,
+            0, 1, 2, 2, 3, 0, // Front
+            1, 5, 6, 6, 2, 1, // Right
+            5, 4, 7, 7, 6, 5, // Back
+            4, 0, 3, 3, 7, 4, // Left
+            3, 2, 6, 6, 7, 3, // Top
+            4, 5, 1, 1, 0, 4, // Bottom
         ];
         let uvs = vec![
-            Vec2(0.0, 0.0),
+            Vec2(0.0, 1.0),
+            Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
+            Vec2(0.0, 0.0),
             Vec2(1.0, 1.0),
             Vec2(0.0, 1.0),
             Vec2(0.0, 0.0),
             Vec2(1.0, 0.0),
-            Vec2(1.0, 1.0),
-            Vec2(0.0, 1.0),
         ];
 
         Self {
