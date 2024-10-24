@@ -195,6 +195,11 @@ impl<'a> Renderer<'a> {
             self.size = new_size;
             self.config.width = new_size.0 as u32;
             self.config.height = new_size.1 as u32;
+            
+            let camera = self.get_main_camera_mut();
+            camera.viewport = new_size;
+            let projection = camera.projection;
+            camera.update_projection(projection);
             self.cameras[self.main_camera].depth_texture =
                 Texture::create_depth_texture(&self.device, Vec2(self.config.width as f32, self.config.height as f32));
             self.surface.configure(&self.device, &self.config);

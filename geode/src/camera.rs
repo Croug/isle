@@ -17,12 +17,14 @@ pub struct Camera {
     pub(crate) buffer: wgpu::Buffer,
     pub(crate) bind_group: wgpu::BindGroup,
     pub(crate) viewport: Vec2,
-    pub(crate) view: Mat4,
-    pub(crate) projection: Mat4,
+    pub(crate) projection: CameraProjection,
+    pub(crate) view_mat: Mat4,
+    pub(crate) projection_mat: Mat4,
 
     dirty: AtomicBool,
 }
 
+#[derive(Clone, Copy)]
 pub enum CameraProjection {
     Perspective {
         fovy: f32,
@@ -73,7 +75,7 @@ impl Camera {
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
         let view = Mat4::look_at(settings.eye, settings.target, Vec3(0.0, 1.0, 0.0));
-        let projection = match settings.projection {
+        let projection_mat = match settings.projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
                 Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
 
@@ -86,7 +88,7 @@ impl Camera {
         let buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some(format!("{} Buffer", settings.label).as_str()),
-                contents: bytemuck::cast_slice(&(projection * view).0),
+                contents: bytemuck::cast_slice(&(projection_mat * view).0),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
         );
@@ -109,11 +111,12 @@ impl Camera {
             label: settings.label,
             clear_color: settings.clear_color,
             viewport: settings.viewport,
+            projection: settings.projection,
             buffer,
             bind_group,
             depth_texture,
-            view,
-            projection,
+            view_mat: view,
+            projection_mat,
 
             dirty: AtomicBool::new(false),
         }
@@ -169,13 +172,17 @@ impl Camera {
         render_pass
     }
 
+    pub fn set_dirty(&self) {
+        self.dirty.store(true, Ordering::SeqCst);
+    }
+
     pub fn update_view(&mut self, eye: Vec3, target: Vec3) {
-        self.view = Mat4::look_at(eye, target, Vec3(0.0, 1.0, 0.0));
+        self.view_mat = Mat4::look_at(eye, target, Vec3(0.0, 1.0, 0.0));
         self.dirty.store(true, Ordering::SeqCst);
     }
 
     pub fn update_projection(&mut self, projection: CameraProjection) {
-        self.projection = match projection {
+        self.projection_mat = match projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
                 Mat4::perspective_projection(self.viewport.0 / self.viewport.1, Angle::Degrees(fovy), znear, zfar),
 
@@ -190,7 +197,7 @@ impl Camera {
 
     pub fn update_buffer(&self, queue: &wgpu::Queue) {
         if self.dirty.swap(false, Ordering::SeqCst) {
-            queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&(self.projection * self.view).0));
+            queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&(self.projection_mat * self.view_mat).0));
         }
     }
 }
