@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use super::d4::Vec4;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3(pub f32, pub f32, pub f32);
 
@@ -184,5 +186,11 @@ impl Into<[f32; 3]> for Vec3 {
 impl From<[f32; 3]> for Vec3 {
     fn from(array: [f32; 3]) -> Self {
         Self(array[0], array[1], array[2])
+    }
+}
+
+impl Into<Vec4> for Vec3 {
+    fn into(self) -> Vec4 {
+        Vec4(self.0, self.1, self.2, 1.0)
     }
 }
