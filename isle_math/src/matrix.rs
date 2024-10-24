@@ -16,18 +16,18 @@ impl<const C: usize, const R: usize> Matrix<C, R> {
 
         for i in 0..R {
             for j in 0..C {
-                result.set(j, i, self.get(i, j));
+                result.set(i, j, self.get(j, i));
             }
         }
 
         result
     }
 
-    pub fn get(&self, row: usize, col: usize) -> f32 {
+    pub fn get(&self, col: usize, row: usize) -> f32 {
         self.0[col][row]
     }
 
-    pub fn set(&mut self, row: usize, col: usize, value: f32) {
+    pub fn set(&mut self, col: usize, row: usize, value: f32) {
         self.0[col][row] = value;
     }
 }
@@ -77,7 +77,6 @@ impl Mat4 {
         ])
     }
 
-
     pub fn look_at(eye: Vec3, target: Vec3, up: Vec3) -> Self {
         let z = (target - eye).norm();
         let x = up.cross(&z).norm();
@@ -125,7 +124,7 @@ impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matri
         for i in 0..C {
             for j in 0..R {
                 for k in 0..U {
-                    result.0[i][j] += self.get(j, k) * rhs.get(k, i);
+                    result.0[i][j] += self.get(k, j) * rhs.get(i, k);
                 }
             }
         }
@@ -145,9 +144,9 @@ impl Mul<Vec3> for Mat4 {
         for i in 0..4 {
             let mut sum = 0.0;
             for j in 0..4 {
-                sum += self.get(j, i) * vec4[j];
+                sum += self.get(i, j) * vec4[j];
             }
-            result.set(i, 0, sum);
+            result.set(0, i, sum);
         }
 
         result
