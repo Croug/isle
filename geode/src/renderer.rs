@@ -3,7 +3,7 @@ use std::vec;
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 
-use crate::{camera::{Camera, CameraCreationSettings, CameraProjection}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -130,6 +130,26 @@ impl<'a> Renderer<'a> {
         Ok(out)
     }
 
+    pub fn get_camera_mut(&mut self, camera_id: usize) -> &mut Camera {
+        &mut self.cameras[camera_id]
+    }
+
+    pub fn get_geometry_mut(&mut self, geometry_id: usize) -> &mut Geometry {
+        &mut self.geometries[geometry_id]
+    }
+
+    pub fn get_texture_mut(&mut self, texture_id: usize) -> &mut Texture {
+        &mut self.textures[texture_id]
+    }
+
+    pub fn get_material_mut(&mut self, material_id: usize) -> &mut Material {
+        &mut self.materials[material_id]
+    }
+
+    pub fn get_main_camera_mut(&mut self) -> &mut Camera {
+        &mut self.cameras[self.main_camera]
+    }
+
     pub fn config(&self) -> &wgpu::SurfaceConfiguration {
         &self.config
     }
@@ -142,8 +162,28 @@ impl<'a> Renderer<'a> {
         &self.queue
     }
 
+    pub fn size(&self) -> Vec2 {
+        self.size
+    }
+
+    pub fn camera(&self, camera_id: usize) -> &Camera {
+        &self.cameras[camera_id]
+    }
+
+    pub fn geometry(&self, geometry_id: usize) -> &Geometry {
+        &self.geometries[geometry_id]
+    }
+
+    pub fn material(&self, material_id: usize) -> &Material {
+        &self.materials[material_id]
+    }
+
     pub fn texture(&self, texture_id: usize) -> &Texture {
         &self.textures[texture_id]
+    }
+
+    pub fn main_camera(&self) -> &Camera {
+        &self.cameras[self.main_camera]
     }
 
     pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
