@@ -49,7 +49,7 @@ impl Rotation {
         Rotation::Quaternion(quaternion::Quaternion::identity())
     }
     pub fn euler_identity() -> Self {
-        Rotation::Euler(Vec3::zero())
+        Rotation::Euler(Vec3::ZERO)
     }
     pub fn to_mat4(&self) -> Mat4 {
         match self {

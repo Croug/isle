@@ -4,6 +4,12 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 pub struct Vec3(pub f32, pub f32, pub f32);
 
 impl Vec3 {
+    pub const ZERO: Self = Self(0.0, 0.0, 0.0);
+    pub const IDENTITY: Self = Self(1.0, 1.0, 1.0);
+    pub const UP: Self = Self(0.0, 1.0, 0.0);
+    pub const FORWARD: Self = Self(0.0, 0.0, 1.0);
+    pub const RIGHT: Self = Self(1.0, 0.0, 0.0);
+
     pub fn cross(&self, other: &Self) -> Self {
         Self(
             self.1 * other.2 - self.2 * other.1,
@@ -22,14 +28,6 @@ impl Vec3 {
 
     pub fn norm(&self) -> Self {
         self / self.mag()
-    }
-
-    pub fn zero() -> Self {
-        Self(0.0, 0.0, 0.0)
-    }
-
-    pub fn identity() -> Self {
-        Self(1.0, 1.0, 1.0)
     }
 }
 

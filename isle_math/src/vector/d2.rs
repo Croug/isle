@@ -3,6 +3,25 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 #[derive(Clone, Copy, Debug)]
 pub struct Vec2(pub f32, pub f32);
 
+impl Vec2 {
+    pub const ZERO: Self = Self(0.0, 0.0);
+    pub const IDENTITY: Self = Self(1.0, 1.0);
+    pub const UP: Self = Self(0.0, 1.0);
+    pub const RIGHT: Self = Self(1.0, 0.0);
+
+    pub fn dot(&self, other: &Self) -> f32 {
+        self.0 * other.0 + self.1 * other.1
+    }
+
+    pub fn mag(&self) -> f32 {
+        self.dot(self).sqrt()
+    }
+
+    pub fn norm(&self) -> Self {
+        self / self.mag()
+    }
+}
+
 impl Div for Vec2 {
     type Output = Self;
 
