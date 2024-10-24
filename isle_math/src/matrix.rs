@@ -135,10 +135,10 @@ impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matri
 }
 
 impl Mul<Vec3> for Mat4 {
-    type Output = Matrix<4, 1>;
+    type Output = Matrix<1, 4>;
 
     fn mul(self, rhs: Vec3) -> Self::Output {
-        let mut result = Matrix::<4, 1>([[0.0; 1]; 4]);
+        let mut result = Matrix::<1, 4>([[0.0; 4]; 1]);
 
         let vec4 = [rhs.0, rhs.1, rhs.2, 1.0];
 
