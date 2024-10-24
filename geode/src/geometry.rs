@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use isle_math::{
     matrix::Mat4, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
 };
+use rustc_hash::FxHashMap;
 use tobj::{load_obj, LoadError, LoadOptions};
 use wgpu::util::DeviceExt;
 
@@ -58,7 +59,7 @@ pub enum GeometryState {
 pub struct Geometry {
     pub(crate) source: GeometrySource,
     pub(crate) state: GeometryState,
-    pub(crate) instances: Vec<Option<Vec<GeometryInstance>>>,
+    pub(crate) instances: FxHashMap<usize, Vec<GeometryInstance>>,
 }
 
 impl Geometry {
@@ -86,8 +87,7 @@ impl Geometry {
         }
     }
     pub fn instance_buffer(&self, material_id: usize, instance_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
-        let data = self.instances[material_id]
-            .as_ref()
+        let data = self.instances.get(&material_id)
             .unwrap()
             .iter()
             .filter(|instance| instance.instance_id == instance_id)
@@ -121,7 +121,7 @@ impl Geometry {
     }
     pub fn num_instances(&self, material_id: usize, instance_id: usize) -> usize {
         let empty = Vec::new();
-        self.instances[material_id].as_ref().unwrap_or(&empty)
+        self.instances.get(&material_id).unwrap_or(&empty)
             .iter()
             .filter(|instance| instance.instance_id == instance_id)
             .count()
@@ -213,7 +213,7 @@ impl Geometry {
                 // normals: None,
                 uvs,
             }),
-            instances: vec![None],
+            instances: FxHashMap::default(),
         }
     }
 
@@ -256,26 +256,26 @@ impl Geometry {
                 // normals: None,
                 uvs,
             }),
-            instances: vec![None],
+            instances: FxHashMap::default(),
         }
     }
 
     pub fn instantiate(&mut self, material_id: usize, material_instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) -> usize {
         let transform = Mat4::transform(scale, &rotation, translation);
-        self.instances[material_id]
-            .get_or_insert_with(Vec::new)
+        self.instances
+            .entry(material_id)
+            .or_insert_with(Vec::new)
             .push(GeometryInstance {
                 instance_id: material_instance_id,
                 transform,
             });
 
-        self.instances[material_id].as_ref().unwrap().len() - 1
+        self.instances.get(&material_id).unwrap().len() - 1
     }
 
     pub fn update_instance(&mut self, material_id: usize, instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) {
         let transform = Mat4::transform(scale, &rotation, translation);
-        self.instances[material_id]
-            .as_mut()
+        self.instances.get_mut(&material_id)
             .unwrap()
             .get_mut(instance_id)
             .unwrap()
