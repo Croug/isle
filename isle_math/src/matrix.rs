@@ -73,7 +73,7 @@ impl Mat4 {
             [a, 0.0, 0.0, 0.0], // Column 0
             [0.0, b, 0.0, 0.0], // Column 1
             [0.0, 0.0, c, 0.0], // Column 2
-            [tx, ty, tz, 1.0],   // Column 3
+            [tx, ty, tz, 1.0],  // Column 3
         ])
     }
 
@@ -88,8 +88,6 @@ impl Mat4 {
             [x.2, y.2, z.2, 0.0],                            // Column 2
             [-x.dot(&eye), -y.dot(&eye), -z.dot(&eye), 1.0], // Column 3
         ])
-
-        // Matrix::identity()
     }
 
     pub fn translation(vector: Vec3) -> Self {
