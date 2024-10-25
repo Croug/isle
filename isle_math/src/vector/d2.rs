@@ -1,5 +1,9 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use crate::matrix::Matrix;
+
+use super::d3::Vec3;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec2(pub f32, pub f32);
 
@@ -201,5 +205,23 @@ impl Into<[f32; 2]> for Vec2 {
 impl From<[f32; 2]> for Vec2 {
     fn from([x, y]: [f32; 2]) -> Self {
         Self(x, y)
+    }
+}
+
+impl Into<Matrix<1, 2>> for Vec2 {
+    fn into(self) -> Matrix<1, 2> {
+        Matrix([self.into()])
+    }
+}
+
+impl From<Matrix<1, 2>> for Vec2 {
+    fn from(matrix: Matrix<1, 2>) -> Self {
+        matrix.0[0].into()
+    }
+}
+
+impl Into<Vec3> for Vec2 {
+    fn into(self) -> Vec3 {
+        Vec3(self.0, self.1, 0.0)
     }
 }

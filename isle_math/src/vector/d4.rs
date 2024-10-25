@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use crate::matrix::Matrix;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec4(pub f32, pub f32, pub f32, pub f32);
 
@@ -29,7 +31,12 @@ impl Div for Vec4 {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0 / rhs.0, self.1 / rhs.1, self.2 / rhs.2, self.3 / rhs.3)
+        Self(
+            self.0 / rhs.0,
+            self.1 / rhs.1,
+            self.2 / rhs.2,
+            self.3 / rhs.3,
+        )
     }
 }
 
@@ -61,7 +68,12 @@ impl Mul for Vec4 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0, self.1 * rhs.1, self.2 * rhs.2, self.3 * rhs.3)
+        Self(
+            self.0 * rhs.0,
+            self.1 * rhs.1,
+            self.2 * rhs.2,
+            self.3 * rhs.3,
+        )
     }
 }
 
@@ -93,7 +105,12 @@ impl Add for Vec4 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2, self.3 + rhs.3)
+        Self(
+            self.0 + rhs.0,
+            self.1 + rhs.1,
+            self.2 + rhs.2,
+            self.3 + rhs.3,
+        )
     }
 }
 
@@ -125,7 +142,12 @@ impl Sub for Vec4 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0, self.1 - rhs.1, self.2 - rhs.2, self.3 - rhs.3)
+        Self(
+            self.0 - rhs.0,
+            self.1 - rhs.1,
+            self.2 - rhs.2,
+            self.3 - rhs.3,
+        )
     }
 }
 
@@ -166,5 +188,41 @@ impl Neg for &Vec4 {
 
     fn neg(self) -> Self::Output {
         (*self).neg()
+    }
+}
+
+impl Into<(f32, f32, f32, f32)> for Vec4 {
+    fn into(self) -> (f32, f32, f32, f32) {
+        (self.0, self.1, self.2, self.3)
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for Vec4 {
+    fn from((x, y, z, w): (f32, f32, f32, f32)) -> Self {
+        Self(x, y, z, w)
+    }
+}
+
+impl Into<[f32; 4]> for Vec4 {
+    fn into(self) -> [f32; 4] {
+        [self.0, self.1, self.2, self.3]
+    }
+}
+
+impl Into<Matrix<1, 4>> for Vec4 {
+    fn into(self) -> Matrix<1, 4> {
+        Matrix([self.into()])
+    }
+}
+
+impl From<Matrix<1, 4>> for Vec4 {
+    fn from(value: Matrix<1, 4>) -> Self {
+        value.0[0].into()
+    }
+}
+
+impl From<[f32; 4]> for Vec4 {
+    fn from(array: [f32; 4]) -> Self {
+        Self(array[0], array[1], array[2], array[3])
     }
 }

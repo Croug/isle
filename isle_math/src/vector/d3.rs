@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use crate::matrix::Matrix;
+
 use super::d4::Vec4;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -179,6 +181,18 @@ impl Neg for &Vec3 {
     }
 }
 
+impl Into<(f32, f32, f32)> for Vec3 {
+    fn into(self) -> (f32, f32, f32) {
+        (self.0, self.1, self.2)
+    }
+}
+
+impl From<(f32, f32, f32)> for Vec3 {
+    fn from(tuple: (f32, f32, f32)) -> Self {
+        Self(tuple.0, tuple.1, tuple.2)
+    }
+}
+
 impl Into<[f32; 3]> for Vec3 {
     fn into(self) -> [f32; 3] {
         [self.0, self.1, self.2]
@@ -188,6 +202,18 @@ impl Into<[f32; 3]> for Vec3 {
 impl From<[f32; 3]> for Vec3 {
     fn from(array: [f32; 3]) -> Self {
         Self(array[0], array[1], array[2])
+    }
+}
+
+impl Into<Matrix<1, 3>> for Vec3 {
+    fn into(self) -> Matrix<1, 3> {
+        Matrix([self.into()])
+    }
+}
+
+impl From<Matrix<1, 3>> for Vec3 {
+    fn from(matrix: Matrix<1, 3>) -> Self {
+        matrix.0[0].into()
     }
 }
 

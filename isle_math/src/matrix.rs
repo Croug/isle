@@ -1,7 +1,9 @@
 use std::ops::Mul;
 
-use super::vector::d3::Vec3;
-use crate::rotation::{Angle, Rotation};
+use crate::{
+    rotation::{Angle, Rotation},
+    vector::{d2::Vec2, d3::Vec3, d4::Vec4},
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Matrix<const C: usize, const R: usize>(pub [[f32; R]; C]);
@@ -114,10 +116,10 @@ impl Mat4 {
 }
 
 impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matrix<U, R> {
-    type Output = Matrix<R, C>;
+    type Output = Matrix<C, R>;
 
     fn mul(self, rhs: Matrix<C, U>) -> Self::Output {
-        let mut result = Matrix::<R, C>([[0.0; C]; R]);
+        let mut result = Matrix::<C, R>([[0.0; R]; C]);
 
         for i in 0..C {
             for j in 0..R {
@@ -131,22 +133,29 @@ impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matri
     }
 }
 
-impl Mul<Vec3> for Mat4 {
+impl Mul<Vec4> for Mat4 {
     type Output = Matrix<1, 4>;
 
+    fn mul(self, rhs: Vec4) -> Self::Output {
+        let mat: Matrix<1, 4> = rhs.into();
+        self * mat
+    }
+}
+
+impl Mul<Vec3> for Mat3 {
+    type Output = Matrix<1, 3>;
+
     fn mul(self, rhs: Vec3) -> Self::Output {
-        let mut result = Matrix::<1, 4>([[0.0; 4]; 1]);
+        let mat: Matrix<1, 3> = rhs.into();
+        self * mat
+    }
+}
 
-        let vec4 = [rhs.0, rhs.1, rhs.2, 1.0];
+impl Mul<Vec2> for Mat2 {
+    type Output = Matrix<1, 2>;
 
-        for i in 0..4 {
-            let mut sum = 0.0;
-            for j in 0..4 {
-                sum += self.get(i, j) * vec4[j];
-            }
-            result.set(0, i, sum);
-        }
-
-        result
+    fn mul(self, rhs: Vec2) -> Self::Output {
+        let mat: Matrix<1, 2> = rhs.into();
+        self * mat
     }
 }
