@@ -8,6 +8,7 @@ use crate::{
 pub mod quaternion {
     use crate::matrix::{Mat4, Matrix};
 
+    #[derive(Clone, Copy, Debug)]
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
     impl Quaternion {
@@ -41,6 +42,7 @@ pub mod quaternion {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum Rotation {
     Euler(Vec3),
     Quaternion(quaternion::Quaternion),
