@@ -1,12 +1,14 @@
 use std::ops::Mul;
 
+use quaternion::Quaternion;
+
 use crate::{
     matrix::{Mat4, Matrix},
     vector::{d3::Vec3, d4::Vec4},
 };
 
 pub mod quaternion {
-    use crate::matrix::{Mat4, Matrix};
+    use crate::{matrix::{Mat4, Matrix}, vector::d4::Vec4};
 
     use super::Rotation;
 
@@ -14,9 +16,9 @@ pub mod quaternion {
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
     impl Quaternion {
-        pub fn identity() -> Self {
-            Self(0.0, 0.0, 0.0, 1.0)
-        }
+        pub const IDENTITY: Self = Self(0.0, 0.0, 0.0, 1.0);
+        pub const ZERO: Self = Self(0.0, 0.0, 0.0, 0.0);
+
         pub fn to_mat4(&self) -> Mat4 {
             let xx = self.0 * self.0;
             let yy = self.1 * self.1;
@@ -48,6 +50,18 @@ pub mod quaternion {
             Rotation::Quaternion(self)
         }
     }
+
+    impl Into<Vec4> for Quaternion {
+        fn into(self) -> Vec4 {
+            Vec4(self.0, self.1, self.2, self.3)
+        }
+    }
+
+    impl Into<Vec4> for &Quaternion {
+        fn into(self) -> Vec4 {
+            Vec4(self.0, self.1, self.2, self.3)
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -58,7 +72,7 @@ pub enum Rotation {
 
 impl Rotation {
     pub fn quaternion_identity() -> Self {
-        Rotation::Quaternion(quaternion::Quaternion::identity())
+        Quaternion::IDENTITY.into()
     }
     pub fn euler_identity() -> Self {
         Rotation::Euler(Vec3::ZERO)

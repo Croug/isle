@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use crate::matrix::Matrix;
+use crate::{matrix::Matrix, rotation::quaternion::Quaternion};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec4(pub f32, pub f32, pub f32, pub f32);
@@ -218,6 +218,18 @@ impl Into<Matrix<1, 4>> for Vec4 {
 impl From<Matrix<1, 4>> for Vec4 {
     fn from(value: Matrix<1, 4>) -> Self {
         value.0[0].into()
+    }
+}
+
+impl Into<Quaternion> for Vec4 {
+    fn into(self) -> Quaternion {
+        Quaternion(self.0, self.1, self.2, self.3)
+    }
+}
+
+impl Into<Quaternion> for &Vec4 {
+    fn into(self) -> Quaternion {
+        Quaternion(self.0, self.1, self.2, self.3)
     }
 }
 
