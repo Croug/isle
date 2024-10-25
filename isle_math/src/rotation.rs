@@ -60,20 +60,20 @@ impl Rotation {
             Rotation::Quaternion(quaternion) => quaternion.to_mat4(),
             Rotation::Euler(euler) => {
                 Matrix([
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, euler.0.cos(), -euler.0.sin(), 0.0],
-                    [0.0, euler.0.sin(), euler.0.cos(), 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
+                    [1.0, 0.0, 0.0, 0.0],                      // Column 0
+                    [0.0, euler.0.cos(), euler.0.sin(), 0.0],  // Column 1
+                    [0.0, -euler.0.sin(), euler.0.cos(), 0.0], // Column 2
+                    [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
-                    [euler.1.cos(), 0.0, euler.1.sin(), 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                    [-euler.1.sin(), 0.0, euler.1.cos(), 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
+                    [euler.1.cos(), 0.0, -euler.1.sin(), 0.0], // Column 0
+                    [0.0, 1.0, 0.0, 0.0],                      // Column 1
+                    [euler.1.sin(), 0.0, euler.1.cos(), 0.0],  // Column 2
+                    [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
-                    [euler.2.cos(), -euler.2.sin(), 0.0, 0.0],
-                    [euler.2.sin(), euler.2.cos(), 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
+                    [euler.2.cos(), euler.2.sin(), 0.0, 0.0],  // Column 0
+                    [-euler.2.sin(), euler.2.cos(), 0.0, 0.0], // Column 1
+                    [0.0, 0.0, 1.0, 0.0],                      // Column 2
+                    [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ])
             }
         }
