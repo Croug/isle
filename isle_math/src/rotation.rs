@@ -1,6 +1,8 @@
+use std::ops::Mul;
+
 use crate::{
     matrix::{Mat4, Matrix},
-    vector::d3::Vec3,
+    vector::{d3::Vec3, d4::Vec4},
 };
 
 pub mod quaternion {
@@ -79,6 +81,18 @@ impl Rotation {
 impl Into<Mat4> for Rotation {
     fn into(self) -> Mat4 {
         self.to_mat4()
+    }
+}
+
+impl Mul<Vec3> for Rotation {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        let rotation_mat = self.to_mat4();
+        let mut vec4: Vec4 = rhs.into();
+        let mat = rotation_mat * vec4;
+        vec4 = mat.into();
+        vec4.xyz()
     }
 }
 
