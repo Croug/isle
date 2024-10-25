@@ -19,6 +19,18 @@ pub mod quaternion {
         pub const IDENTITY: Self = Self(0.0, 0.0, 0.0, 1.0);
         pub const ZERO: Self = Self(0.0, 0.0, 0.0, 0.0);
 
+        pub fn dot(&self, other: &Quaternion) -> f32 {
+            <Self as Into<Vec4>>::into(*self).dot(&other.into())
+        }
+
+        pub fn mag(&self) -> f32 {
+            <Self as Into<Vec4>>::into(*self).mag()
+        }
+
+        pub fn norm(&self) -> Self {
+            <Self as Into<Vec4>>::into(*self).norm().into()
+        }
+
         pub fn to_mat4(&self) -> Mat4 {
             let xx = self.0 * self.0;
             let yy = self.1 * self.1;
