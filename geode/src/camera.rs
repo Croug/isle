@@ -1,8 +1,8 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{f32::consts::PI, sync::atomic::{AtomicBool, Ordering}};
 
 use isle_math::{
     matrix::Mat4,
-    rotation::Angle,
+    rotation::{Angle, Rotation},
     vector::{d2::Vec2, d3::Vec3},
 };
 use wgpu::{util::DeviceExt, BindGroupDescriptor};
@@ -46,8 +46,8 @@ pub struct CameraCreationSettings {
     pub label: &'static str,
     pub clear_color: wgpu::Color,
     pub viewport: Vec2,
-    pub eye: Vec3,
-    pub target: Vec3,
+    pub position: Vec3,
+    pub orientation: Rotation,
     pub projection: CameraProjection,
 }
 
@@ -57,8 +57,8 @@ impl Default for CameraCreationSettings {
             label: "Camera",
             clear_color: wgpu::Color::BLACK,
             viewport: Vec2(800.0, 600.0),
-            eye: Vec3(0.0, 500., -500.0),
-            target: Vec3(0.0, 0.0, 0.0),
+            position: Vec3(0.0, 500., -500.0),
+            orientation: Rotation::Euler(Vec3(-PI / 4., 0.0, 0.0)),
             projection: CameraProjection::Perspective {
                 fovy: 60.0,
                 znear: 10.0,
@@ -74,7 +74,9 @@ impl Camera {
         let texture_id = renderer.add_texture(texture);
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
-        let view = Mat4::look_at(settings.eye, settings.target, Vec3(0.0, 1.0, 0.0));
+        let up = settings.orientation * settings.position;
+        let target = settings.orientation * Vec3::FORWARD + settings.position;
+        let view = Mat4::look_at(settings.position, target, up);
         let projection_mat = match settings.projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
                 Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
@@ -176,8 +178,10 @@ impl Camera {
         self.dirty.store(true, Ordering::SeqCst);
     }
 
-    pub fn update_view(&mut self, eye: Vec3, target: Vec3) {
-        self.view_mat = Mat4::look_at(eye, target, Vec3(0.0, 1.0, 0.0));
+    pub fn update_view(&mut self, position: Vec3, orientation: Rotation) {
+        let up = orientation * position;
+        let target = orientation * Vec3::FORWARD + position;
+        self.view_mat = Mat4::look_at(position, target, up);
         self.dirty.store(true, Ordering::SeqCst);
     }
 
