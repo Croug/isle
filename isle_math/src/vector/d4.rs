@@ -23,6 +23,8 @@ impl Vec4 {
     }
 }
 
+crate::macros::impl_swizzle!(Vec4, 4);
+
 impl Div for Vec4 {
     type Output = Self;
 
