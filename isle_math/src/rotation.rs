@@ -8,6 +8,8 @@ use crate::{
 pub mod quaternion {
     use crate::matrix::{Mat4, Matrix};
 
+    use super::Rotation;
+
     #[derive(Clone, Copy, Debug)]
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
@@ -38,6 +40,12 @@ pub mod quaternion {
     impl Into<Mat4> for Quaternion {
         fn into(self) -> Mat4 {
             self.to_mat4()
+        }
+    }
+
+    impl Into<Rotation> for Quaternion {
+        fn into(self) -> Rotation {
+            Rotation::Quaternion(self)
         }
     }
 }
@@ -83,6 +91,12 @@ impl Rotation {
 impl Into<Mat4> for Rotation {
     fn into(self) -> Mat4 {
         self.to_mat4()
+    }
+}
+
+impl From<Vec3> for Rotation {
+    fn from(euler: Vec3) -> Self {
+        Rotation::Euler(euler)
     }
 }
 
