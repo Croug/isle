@@ -8,7 +8,10 @@ use crate::{
 };
 
 pub mod quaternion {
-    use crate::{matrix::{Mat4, Matrix}, vector::d4::Vec4};
+    use crate::{
+        matrix::{Mat4, Matrix},
+        vector::d4::Vec4,
+    };
 
     use super::Rotation;
 
@@ -43,9 +46,9 @@ pub mod quaternion {
             let wz = self.3 * self.2;
 
             Matrix([
-                [1.0 - 2.0 * (yy + zz), 2.0 * (xy - wz), 2.0 * (xz + wy), 0.0],
-                [2.0 * (xy + wz), 1.0 - 2.0 * (xx + zz), 2.0 * (yz - wx), 0.0],
-                [2.0 * (xz - wy), 2.0 * (yz + wx), 1.0 - 2.0 * (xx + yy), 0.0],
+                [1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz), 2.0 * (xz - wy), 0.0],
+                [2.0 * (xy - wz), 1.0 - 2.0 * (xx + zz), 2.0 * (yz + wx), 0.0],
+                [2.0 * (xz + wy), 2.0 * (yz - wx), 1.0 - 2.0 * (xx + yy), 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ])
         }
@@ -95,17 +98,17 @@ impl Rotation {
             Rotation::Euler(euler) => {
                 Matrix([
                     [1.0, 0.0, 0.0, 0.0],                      // Column 0
-                    [0.0, euler.0.cos(), euler.0.sin(), 0.0],  // Column 1
-                    [0.0, -euler.0.sin(), euler.0.cos(), 0.0], // Column 2
+                    [0.0, euler.0.cos(), -euler.0.sin(), 0.0], // Column 1
+                    [0.0, euler.0.sin(), euler.0.cos(), 0.0],  // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
-                    [euler.1.cos(), 0.0, -euler.1.sin(), 0.0], // Column 0
+                    [euler.1.cos(), 0.0, euler.1.sin(), 0.0],  // Column 0
                     [0.0, 1.0, 0.0, 0.0],                      // Column 1
-                    [euler.1.sin(), 0.0, euler.1.cos(), 0.0],  // Column 2
+                    [-euler.1.sin(), 0.0, euler.1.cos(), 0.0], // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
-                    [euler.2.cos(), euler.2.sin(), 0.0, 0.0],  // Column 0
-                    [-euler.2.sin(), euler.2.cos(), 0.0, 0.0], // Column 1
+                    [euler.2.cos(), -euler.2.sin(), 0.0, 0.0], // Column 0
+                    [euler.2.sin(), euler.2.cos(), 0.0, 0.0],  // Column 1
                     [0.0, 0.0, 1.0, 0.0],                      // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ])
