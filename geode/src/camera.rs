@@ -2,7 +2,7 @@ use std::{f32::consts::PI, sync::atomic::{AtomicBool, Ordering}};
 
 use isle_math::{
     matrix::Mat4,
-    rotation::{Angle, Rotation},
+    rotation::{quaternion::Quaternion, Angle, Rotation},
     vector::{d2::Vec2, d3::Vec3},
 };
 use wgpu::{util::DeviceExt, BindGroupDescriptor};
@@ -53,12 +53,13 @@ pub struct CameraCreationSettings {
 
 impl Default for CameraCreationSettings {
     fn default() -> Self {
+        let position = Vec3(0.0, 500., -500.0);
         Self {
             label: "Camera",
             clear_color: wgpu::Color::BLACK,
             viewport: Vec2(800.0, 600.0),
-            position: Vec3(0.0, 500., -500.0),
-            orientation: Rotation::Euler(Vec3(-PI / 4., 0.0, 0.0)),
+            position,
+            orientation: Quaternion::look_at(&position, &Vec3::ZERO).into(),
             projection: CameraProjection::Perspective {
                 fovy: 60.0,
                 znear: 10.0,
