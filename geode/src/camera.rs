@@ -178,10 +178,8 @@ impl Camera {
         self.dirty.store(true, Ordering::SeqCst);
     }
 
-    pub fn update_view(&mut self, position: Vec3, orientation: Rotation) {
-        let up = orientation * position;
-        let target = orientation * Vec3::FORWARD + position;
-        self.view_mat = Mat4::look_at(position, target, up);
+    pub fn update_view(&mut self, position: &Vec3, orientation: &Rotation, scale: &Vec3) {
+        self.view_mat = Mat4::inverse_transform(*scale, orientation, *position);
         self.dirty.store(true, Ordering::SeqCst);
     }
 
