@@ -8,11 +8,11 @@ use crate::{
 };
 
 pub mod quaternion {
-    use std::ops::Mul;
+    use std::{f32::consts::PI, ops::Mul};
 
     use crate::{
         matrix::{Mat4, Matrix},
-        vector::d4::Vec4,
+        vector::{d3::Vec3, d4::Vec4},
     };
 
     use super::Rotation;
@@ -36,6 +36,47 @@ pub mod quaternion {
             <Self as Into<Vec4>>::into(*self).norm().into()
         }
 
+        pub fn inverse(&self) -> Self {
+            Quaternion(self.0, -self.1, -self.2, -self.3)
+        }
+
+        pub fn rotate_point(&self, point: Vec3) -> Vec3 {
+            let s = self.norm();
+            let p = Quaternion(0.0, point.0, point.1, point.2);
+            let p = s.inverse() * p * s;
+            let v: Vec4 = p.into();
+
+            v.yzw()
+        }
+
+        pub fn look_at(source: &Vec3, dest: &Vec3) -> Self {
+            let forward = (dest - source).norm();
+            let dot = Vec3::FORWARD.dot(&forward);
+
+            const EPSILON: f32 = 0.000001;
+            if (dot - -1.).abs() < EPSILON {
+                Self(PI, 0.0, 1.0, 0.0)
+            } else if (dot - 1.).abs() < EPSILON {
+                Self::IDENTITY
+            } else {
+                let angle = dot.acos();
+                let axis = Vec3::FORWARD.cross(&forward).norm();
+                
+                Self::from_axis_angle(axis, angle)
+            }
+        }
+
+        pub fn from_axis_angle(axis: Vec3, angle: f32) -> Self {
+            let half_angle = angle / 2.0;
+            let half_angle_sin = half_angle.sin();
+            Self(
+                half_angle.cos(),
+                axis.0 * half_angle_sin,
+                axis.1 * half_angle_sin,
+                axis.2 * half_angle_sin,
+            )
+        }
+
         pub fn to_mat4(&self) -> Mat4 {
             let xx = self.1 * self.1;
             let yy = self.2 * self.2;
@@ -53,6 +94,19 @@ pub mod quaternion {
                 [2.0 * (xz + wy), 2.0 * (yz - wx), 1.0 - 2.0 * (xx + yy), 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ])
+        }
+    }
+
+    impl Mul for Quaternion {
+        type Output = Self;
+        
+        fn mul(self, rhs: Self) -> Self::Output {
+            Quaternion(
+                self.0 * rhs.0 - self.1 * rhs.1 - self.2 * rhs.2 - self.3 * rhs.3,
+                self.0 * rhs.1 + self.1 * rhs.0 - self.2 * rhs.3 + self.3 * rhs.2,
+                self.0 * rhs.2 + self.1 * rhs.3 + self.2 * rhs.0 - self.3 * rhs.1,
+                self.0 * rhs.3 - self.1 * rhs.2 + self.2 * rhs.1 + self.3 * rhs.0,
+            )
         }
     }
 
@@ -98,10 +152,11 @@ impl Rotation {
         match self {
             Rotation::Quaternion(quaternion) => quaternion.to_mat4(),
             Rotation::Euler(euler) => {
+                // ZYX Yaw-Pitch-Roll
                 Matrix([
-                    [1.0, 0.0, 0.0, 0.0],                      // Column 0
-                    [0.0, euler.0.cos(), -euler.0.sin(), 0.0], // Column 1
-                    [0.0, euler.0.sin(), euler.0.cos(), 0.0],  // Column 2
+                    [euler.2.cos(), -euler.2.sin(), 0.0, 0.0], // Column 0
+                    [euler.2.sin(), euler.2.cos(), 0.0, 0.0],  // Column 1
+                    [0.0, 0.0, 1.0, 0.0],                      // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
                     [euler.1.cos(), 0.0, euler.1.sin(), 0.0],  // Column 0
@@ -109,13 +164,69 @@ impl Rotation {
                     [-euler.1.sin(), 0.0, euler.1.cos(), 0.0], // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ]) * Matrix([
-                    [euler.2.cos(), -euler.2.sin(), 0.0, 0.0], // Column 0
-                    [euler.2.sin(), euler.2.cos(), 0.0, 0.0],  // Column 1
-                    [0.0, 0.0, 1.0, 0.0],                      // Column 2
+                    [1.0, 0.0, 0.0, 0.0],                      // Column 0
+                    [0.0, euler.0.cos(), -euler.0.sin(), 0.0], // Column 1
+                    [0.0, euler.0.sin(), euler.0.cos(), 0.0],  // Column 2
                     [0.0, 0.0, 0.0, 1.0],                      // Column 3
                 ])
             }
         }
+    }
+
+    pub fn to_quat(&self) -> Quaternion {
+        match self {
+            Self::Quaternion(quat) => *quat,
+            Self::Euler(euler) => {
+                let Vec3(x, y, z) = euler / 2.;
+                let (sx, cx) = x.sin_cos();
+                let (sy, cy) = y.sin_cos();
+                let (sz, cz) = z.sin_cos();
+
+                Quaternion(
+                    cx * cy * cz + sx * sy * sx,
+                    sx * cy * cz - cx * sy * sz,
+                    cx * sy * cz + sx * cy * sz,
+                    cx * cy * sz - sx * sy * cz,
+                )
+            }
+        }
+    }
+
+    pub fn to_euler(&self) -> Vec3 {
+        match self {
+            Self::Euler(euler) => *euler,
+            Self::Quaternion(Quaternion(w, i, j, k)) => {
+                Vec3(
+                    (2. * (w * i + j * k)).atan2(w*w - i*i - j*j + k*k),
+                    (2. * (w * j - i * k)).asin(),
+                    (2. * (w * k + i * j)).atan2(w*w + i*i - j*j - k*k),
+                )
+            }
+        }
+    }
+}
+
+impl Into<Quaternion> for &Rotation {
+    fn into(self) -> Quaternion {
+        self.to_quat()
+    }
+}
+
+impl Into<Quaternion> for Rotation {
+    fn into(self) -> Quaternion {
+        self.to_quat()
+    }
+}
+
+impl Into<Vec3> for &Rotation {
+    fn into(self) -> Vec3 {
+        self.to_euler()
+    }
+}
+
+impl Into<Vec3> for Rotation {
+    fn into(self) -> Vec3 {
+        self.to_euler()
     }
 }
 
