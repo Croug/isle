@@ -48,6 +48,7 @@ pub struct CameraCreationSettings {
     pub viewport: Vec2,
     pub position: Vec3,
     pub orientation: Rotation,
+    pub scale: Vec3,
     pub projection: CameraProjection,
 }
 
@@ -60,6 +61,7 @@ impl Default for CameraCreationSettings {
             viewport: Vec2(800.0, 600.0),
             position,
             orientation: Quaternion::look_at(&position, &Vec3::ZERO).into(),
+            scale: Vec3::IDENTITY,
             projection: CameraProjection::Perspective {
                 fovy: 60.0,
                 znear: 10.0,
@@ -75,9 +77,7 @@ impl Camera {
         let texture_id = renderer.add_texture(texture);
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
-        let up = settings.orientation * settings.position;
-        let target = settings.orientation * Vec3::FORWARD + settings.position;
-        let view = Mat4::look_at(settings.position, target, up);
+        let view = Mat4::inverse_transform(settings.scale, &settings.orientation, settings.scale);
         let projection_mat = match settings.projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
                 Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
