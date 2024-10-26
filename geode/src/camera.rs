@@ -77,7 +77,7 @@ impl Camera {
         let texture_id = renderer.add_texture(texture);
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
-        let view = Mat4::inverse_transform(settings.scale, &settings.orientation, settings.scale);
+        let view = Mat4::inverse_transform(settings.scale, &settings.orientation, settings.position);
         let projection_mat = match settings.projection {
             CameraProjection::Perspective { fovy, znear, zfar } =>
                 Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
