@@ -113,6 +113,14 @@ impl Mat4 {
     pub fn transform(scale: Vec3, rotation: &Rotation, translation: Vec3) -> Self {
         Self::translation(translation) * rotation.to_mat4() * Self::scale(scale)
     }
+
+    pub fn inverse_transform(scale: Vec3, rotation: &Rotation, translation: Vec3) -> Self {
+        let inv_scale = Mat4::scale(Vec3(1. / scale.0, 1. / scale.1, 1. / scale.2));
+        let inv_rot = rotation.to_mat4().transpose();
+        let position = inv_rot * inv_scale * Mat4::translation(-translation);
+
+        position * inv_rot * inv_scale
+    }
 }
 
 impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matrix<U, R> {
