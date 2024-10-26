@@ -8,6 +8,8 @@ use crate::{
 };
 
 pub mod quaternion {
+    use std::ops::Mul;
+
     use crate::{
         matrix::{Mat4, Matrix},
         vector::d4::Vec4,
@@ -19,7 +21,7 @@ pub mod quaternion {
     pub struct Quaternion(pub f32, pub f32, pub f32, pub f32);
 
     impl Quaternion {
-        pub const IDENTITY: Self = Self(0.0, 0.0, 0.0, 1.0);
+        pub const IDENTITY: Self = Self(1.0, 0.0, 0.0, 0.0);
         pub const ZERO: Self = Self(0.0, 0.0, 0.0, 0.0);
 
         pub fn dot(&self, other: &Quaternion) -> f32 {
@@ -35,15 +37,15 @@ pub mod quaternion {
         }
 
         pub fn to_mat4(&self) -> Mat4 {
-            let xx = self.0 * self.0;
-            let yy = self.1 * self.1;
-            let zz = self.2 * self.2;
-            let xy = self.0 * self.1;
-            let xz = self.0 * self.2;
-            let yz = self.1 * self.2;
-            let wx = self.3 * self.0;
-            let wy = self.3 * self.1;
-            let wz = self.3 * self.2;
+            let xx = self.1 * self.1;
+            let yy = self.2 * self.2;
+            let zz = self.3 * self.3;
+            let xy = self.1 * self.2;
+            let xz = self.1 * self.3;
+            let yz = self.2 * self.3;
+            let wx = self.0 * self.1;
+            let wy = self.0 * self.2;
+            let wz = self.0 * self.3;
 
             Matrix([
                 [1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz), 2.0 * (xz - wy), 0.0],
