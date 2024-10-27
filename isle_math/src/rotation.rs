@@ -3,7 +3,7 @@ use std::ops::Mul;
 use quaternion::Quaternion;
 
 use crate::{
-    matrix::{Mat4, Matrix},
+    matrix::{Mat3, Mat4, Matrix},
     vector::{d3::Vec3, d4::Vec4},
 };
 
@@ -11,7 +11,7 @@ pub mod quaternion {
     use std::{f32::consts::PI, ops::Mul};
 
     use crate::{
-        matrix::{Mat4, Matrix},
+        matrix::{Mat3, Mat4, Matrix},
         vector::{d3::Vec3, d4::Vec4},
     };
 
@@ -77,7 +77,7 @@ pub mod quaternion {
             )
         }
 
-        pub fn to_mat4(&self) -> Mat4 {
+        pub fn to_mat3(&self) -> Mat3 {
             let xx = self.1 * self.1;
             let yy = self.2 * self.2;
             let zz = self.3 * self.3;
@@ -89,10 +89,20 @@ pub mod quaternion {
             let wz = self.0 * self.3;
 
             Matrix([
-                [1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz), 2.0 * (xz - wy), 0.0],
-                [2.0 * (xy - wz), 1.0 - 2.0 * (xx + zz), 2.0 * (yz + wx), 0.0],
-                [2.0 * (xz + wy), 2.0 * (yz - wx), 1.0 - 2.0 * (xx + yy), 0.0],
-                [0.0, 0.0, 0.0, 1.0],
+                [1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz), 2.0 * (xz - wy)],
+                [2.0 * (xy - wz), 1.0 - 2.0 * (xx + zz), 2.0 * (yz + wx)],
+                [2.0 * (xz + wy), 2.0 * (yz - wx), 1.0 - 2.0 * (xx + yy)],
+            ])
+        }
+
+        pub fn to_mat4(&self) -> Mat4 {
+            let [[a, b, c], [d, e, f], [g, h, i]] = self.to_mat3().0;
+
+            Matrix([
+                [a, b, c, 0.0], // Column 0
+                [d, e, f, 0.0], // Column 1
+                [g, h, i, 0.0], // Column 2
+                [0.0, 0.0, 0.0, 1.0], // Column 3
             ])
         }
     }
@@ -107,6 +117,12 @@ pub mod quaternion {
                 self.0 * rhs.2 + self.1 * rhs.3 + self.2 * rhs.0 - self.3 * rhs.1,
                 self.0 * rhs.3 - self.1 * rhs.2 + self.2 * rhs.1 + self.3 * rhs.0,
             )
+        }
+    }
+
+    impl Into<Mat3> for Quaternion {
+        fn into(self) -> Mat3 {
+            self.to_mat3()
         }
     }
 
@@ -147,6 +163,27 @@ impl Rotation {
     }
     pub fn euler_identity() -> Self {
         Rotation::Euler(Vec3::ZERO)
+    }
+    pub fn to_mat3(&self) -> Mat3 {
+        match self {
+            Rotation::Quaternion(quat) => quat.to_mat3(),
+            Rotation::Euler(euler) => {
+                // ZYX Yaw-Pitch-Roll
+                Matrix([
+                    [euler.2.cos(), -euler.2.sin(), 0.0], // Column 0
+                    [euler.2.sin(), euler.2.cos(), 0.0],  // Column 1
+                    [0.0, 0.0, 1.0],                      // Column 2
+                ]) * Matrix([
+                    [euler.1.cos(), 0.0, euler.1.sin()],  // Column 0
+                    [0.0, 1.0, 0.0],                      // Column 1
+                    [-euler.1.sin(), 0.0, euler.1.cos()], // Column 2
+                ]) * Matrix([
+                    [1.0, 0.0, 0.0],                      // Column 0
+                    [0.0, euler.0.cos(), -euler.0.sin()], // Column 1
+                    [0.0, euler.0.sin(), euler.0.cos()],  // Column 2
+                ])
+            }
+        }
     }
     pub fn to_mat4(&self) -> Mat4 {
         match self {
@@ -227,6 +264,12 @@ impl Into<Vec3> for &Rotation {
 impl Into<Vec3> for Rotation {
     fn into(self) -> Vec3 {
         self.to_euler()
+    }
+}
+
+impl Into<Mat3> for Rotation {
+    fn into(self) -> Mat3 {
+        self.to_mat3()
     }
 }
 
