@@ -17,11 +17,20 @@ pub struct Camera {
     pub(crate) buffer: wgpu::Buffer,
     pub(crate) bind_group: wgpu::BindGroup,
     pub(crate) viewport: Vec2,
+    pub(crate) position: Vec3,
     pub(crate) projection: CameraProjection,
     pub(crate) view_mat: Mat4,
     pub(crate) projection_mat: Mat4,
 
     dirty: AtomicBool,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct CameraUniform {
+    view_proj: [[f32; 4]; 4],
+    position: [f32; 3],
+    _padding: f32,
 }
 
 #[derive(Clone, Copy)]
@@ -88,10 +97,16 @@ impl Camera {
             CameraProjection::None => Mat4::identity(),
         };
 
+        let camera_uniform = CameraUniform {
+            view_proj: (projection_mat * view).0,
+            position: settings.position.into(),
+            _padding: 0.0,
+        };
+
         let buffer = renderer.device().create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some(format!("{} Buffer", settings.label).as_str()),
-                contents: bytemuck::cast_slice(&(projection_mat * view).0),
+                contents: bytemuck::cast_slice(&[camera_uniform]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
         );
@@ -103,7 +118,7 @@ impl Camera {
                     wgpu::BindGroupEntry {
                         binding: 0,
                         resource: buffer.as_entire_binding(),
-                    }
+                    },
                 ],
                 label: Some(format!("{} Bind Group", settings.label).as_str()),
             }
@@ -120,6 +135,7 @@ impl Camera {
             depth_texture,
             view_mat: view,
             projection_mat,
+            position: settings.position,
 
             dirty: AtomicBool::new(false),
         }
@@ -129,7 +145,7 @@ impl Camera {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -181,6 +197,7 @@ impl Camera {
 
     pub fn update_view(&mut self, position: &Vec3, orientation: &Rotation, scale: &Vec3) {
         self.view_mat = Mat4::inverse_transform(*scale, orientation, *position);
+        self.position = *position;
         self.dirty.store(true, Ordering::SeqCst);
     }
 
@@ -200,7 +217,12 @@ impl Camera {
 
     pub fn update_buffer(&self, queue: &wgpu::Queue) {
         if self.dirty.swap(false, Ordering::SeqCst) {
-            queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&(self.projection_mat * self.view_mat).0));
+            let camera_buffer = CameraUniform {
+                view_proj: (self.projection_mat * self.view_mat).0,
+                position: self.position.into(),
+                _padding: 0.0,
+            };
+            queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[camera_buffer]));
         }
     }
 }
