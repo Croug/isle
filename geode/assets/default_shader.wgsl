@@ -15,6 +15,9 @@ struct InstanceInput {
     @location(4) model_1: vec4<f32>,
     @location(5) model_2: vec4<f32>,
     @location(6) model_3: vec4<f32>,
+    @location(7) normal_0: vec3<f32>,
+    @location(8) normal_1: vec3<f32>,
+    @location(9) normal_2: vec3<f32>,
 };
 
 struct Camera {
@@ -36,9 +39,15 @@ fn vs_main(
         instance.model_3,
     );
 
+    let normal_mat = mat3x3<f32>(
+        instance.normal_0,
+        instance.normal_1,
+        instance.normal_2,
+    );
+
     var out: VertexOutput;
     out.uv = mesh.uv;
-    out.normal = mesh.normal;
+    out.normal = normal_mat * mesh.normal;
     out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
 
     return out;
@@ -51,5 +60,8 @@ var sampler_in: sampler;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(texture, sampler_in, in.uv);
+    let normal = normalize(in.normal);
+    let direction = normalize(vec3<f32>(0.0, -1.0, 1.0));
+    let light = dot(normal, -direction) + 0.1;
+    return textureSample(texture, sampler_in, in.uv) * light;
 }

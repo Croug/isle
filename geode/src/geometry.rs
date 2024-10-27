@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use isle_math::{
-    matrix::Mat4, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
+    matrix::{Mat3, Mat4}, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
 };
 use rustc_hash::FxHashMap;
 use tobj::{load_obj, LoadError, LoadOptions};
@@ -67,6 +67,12 @@ pub struct Geometry {
 }
 
 impl Geometry {
+    pub fn instance(&self, material_id: usize, instance_id: usize) -> Option<&GeometryInstance> {
+        self.instances.get(&material_id)?.get(instance_id)
+    }
+    pub fn instance_mut(&mut self, material_id: usize, instance_id: usize) -> Option<&mut GeometryInstance> {
+        self.instances.get_mut(&material_id)?.get_mut(instance_id)
+    }
     pub(crate) fn vertices(&self) -> Vec<Vertex> {
         let mesh = match &self.state {
             GeometryState::Memory(mesh) => mesh,
@@ -397,11 +403,13 @@ impl Geometry {
 
     pub fn instantiate(&mut self, material_id: usize, material_instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) -> usize {
         let transform = Mat4::transform(scale, &rotation, translation);
+        let normal_mat = Mat3::normal(&transform).unwrap();
         self.instances
             .entry(material_id)
             .or_insert_with(Vec::new)
             .push(GeometryInstance {
                 instance_id: material_instance_id,
+                normal_mat,
                 transform,
             });
 
@@ -419,27 +427,41 @@ impl Geometry {
 }
 
 pub struct GeometryInstance {
-    pub(crate) instance_id: usize,
-    pub(crate) transform: Mat4,
+    pub instance_id: usize,
+    pub transform: Mat4,
+    pub normal_mat: Mat3,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct InstanceRaw {
+    pub(crate) transform: [[f32; 4]; 4],
+    pub(crate) normal_mat: [[f32; 3]; 3],
 }
 
 impl GeometryInstance {
-    const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+    const ATTRIBS: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
         3 => Float32x4,
         4 => Float32x4,
         5 => Float32x4,
-        6 => Float32x4
+        6 => Float32x4,
+        7 => Float32x3,
+        8 => Float32x3,
+        9 => Float32x3,
     ];
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Mat4>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &GeometryInstance::ATTRIBS,
         }
     }
 
-    pub fn to_raw(&self) -> [[f32; 4]; 4] {
-        self.transform.0
+    pub fn to_raw(&self) -> InstanceRaw {
+        InstanceRaw {
+            transform: self.transform.0,
+            normal_mat: self.normal_mat.0,
+        }
     }
 }
