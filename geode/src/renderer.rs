@@ -130,23 +130,23 @@ impl<'a> Renderer<'a> {
         Ok(out)
     }
 
-    pub fn get_camera_mut(&mut self, camera_id: usize) -> &mut Camera {
+    pub fn camera_mut(&mut self, camera_id: usize) -> &mut Camera {
         &mut self.cameras[camera_id]
     }
 
-    pub fn get_geometry_mut(&mut self, geometry_id: usize) -> &mut Geometry {
+    pub fn geometry_mut(&mut self, geometry_id: usize) -> &mut Geometry {
         &mut self.geometries[geometry_id]
     }
 
-    pub fn get_texture_mut(&mut self, texture_id: usize) -> &mut Texture {
+    pub fn texture_mut(&mut self, texture_id: usize) -> &mut Texture {
         &mut self.textures[texture_id]
     }
 
-    pub fn get_material_mut(&mut self, material_id: usize) -> &mut Material {
+    pub fn material_mut(&mut self, material_id: usize) -> &mut Material {
         &mut self.materials[material_id]
     }
 
-    pub fn get_main_camera_mut(&mut self) -> &mut Camera {
+    pub fn main_camera_mut(&mut self) -> &mut Camera {
         &mut self.cameras[self.main_camera]
     }
 
@@ -196,7 +196,7 @@ impl<'a> Renderer<'a> {
             self.config.width = new_size.0 as u32;
             self.config.height = new_size.1 as u32;
             
-            let camera = self.get_main_camera_mut();
+            let camera = self.main_camera_mut();
             camera.viewport = new_size;
             let projection = camera.projection;
             camera.update_projection(projection);
