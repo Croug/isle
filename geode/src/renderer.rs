@@ -9,13 +9,13 @@ use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, materi
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub(crate) struct Vertex {
     pub(crate) position: [f32; 3],
-    // pub(crate) normal: [f32; 3],
+    pub(crate) normal: [f32; 3],
     pub(crate) uv: [f32; 2],
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] =
-        wgpu::vertex_attr_array![0 => Float32x3, 2 => Float32x2];
+    const ATTRIBS: [wgpu::VertexAttribute; 3] =
+        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2];
 
     pub fn desc() -> VertexBufferLayout<'static> {
         use std::mem;

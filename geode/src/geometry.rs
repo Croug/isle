@@ -25,7 +25,7 @@ pub enum GeometrySource {
 pub struct Mesh {
     pub(crate) geometry_type: GeometryType,
     pub(crate) vertices: Vec<Vec3>,
-    // pub(crate) normals: Option<Vec<Vec3>>,
+    pub(crate) normals: Option<Vec<Vec3>>,
     pub(crate) uvs: Vec<Vec2>,
 }
 
@@ -33,13 +33,17 @@ impl From<tobj::Mesh> for Mesh {
     fn from(value: tobj::Mesh) -> Self {
         let num_positions = value.positions.len() / 3;
         let num_uvs = value.texcoords.len() / 2;
+        let num_normals = value.normals.len() / 3;
 
         assert_eq!(num_positions, num_uvs, "Number of positions and uvs must match\nVertices: {num_positions}\nUVs: {num_uvs}");
+        assert_eq!(num_positions, num_normals, "Number of positions and normals must match\nVertices: {num_positions}\nNormals: {num_normals}");
+
 
         Self {
             geometry_type: GeometryType::Tris(value.indices),
             vertices: value.positions.chunks_exact(3).map(|v| Vec3(v[0], v[1], v[2])).collect(),
             uvs: value.texcoords.chunks_exact(2).map(|v| Vec2(v[0], v[1])).collect(),
+            normals: Some(value.normals.chunks_exact(3).map(|v| Vec3(v[0], v[1], v[2])).collect()),
         }
     }
 }
@@ -74,7 +78,7 @@ impl Geometry {
             .enumerate()
             .map(|(i, vertex)| Vertex {
                 position: vertex.clone().into(),
-                // normal: mesh.normals.as_ref().unwrap()[i].clone().into(),
+                normal: mesh.normals.as_ref().unwrap()[i].clone().into(),
                 uv: mesh.uvs[i].clone().into(),
             })
             .collect()
@@ -189,7 +193,7 @@ impl Geometry {
         });
     }
 
-    pub fn plane(size: Vec2) -> Self {
+    pub fn xy_plane(size: Vec2) -> Self {
         let half_size = size / 2.0;
         let vertices = vec![
             Vec3(-half_size.0, -half_size.1, 0.0),
@@ -197,20 +201,60 @@ impl Geometry {
             Vec3(half_size.0, half_size.1, 0.0),
             Vec3(-half_size.0, half_size.1, 0.0),
         ];
-        let indices = vec![0, 1, 2, 2, 3, 0];
+        let normals = vec![
+            -Vec3::FORWARD,
+            -Vec3::FORWARD,
+            -Vec3::FORWARD,
+            -Vec3::FORWARD,
+        ];
         let uvs = vec![
             Vec2(0.0, 1.0),
             Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
             Vec2(0.0, 0.0),
         ];
+        let indices = vec![0, 1, 2, 2, 3, 0];
 
         Self {
             source: GeometrySource::Internal("Plane"),
             state: GeometryState::Memory(Mesh {
                 geometry_type: GeometryType::Tris(indices),
                 vertices,
-                // normals: None,
+                normals: Some(normals),
+                uvs,
+            }),
+            instances: FxHashMap::default(),
+        }
+    }
+
+    pub fn xz_plane(size: Vec2) -> Self {
+        let half_size = size / 2.0;
+        let vertices = vec![
+            Vec3(-half_size.0, 0.0, -half_size.1),
+            Vec3(half_size.0, 0.0, -half_size.1),
+            Vec3(half_size.0, 0.0, half_size.1),
+            Vec3(-half_size.0, 0.0, half_size.1),
+        ];
+        let normals = vec![
+            Vec3::UP,
+            Vec3::UP,
+            Vec3::UP,
+            Vec3::UP,
+        ];
+        let uvs = vec![
+            Vec2(0.0, 1.0),
+            Vec2(1.0, 1.0),
+            Vec2(1.0, 0.0),
+            Vec2(0.0, 0.0),
+        ];
+        let indices = vec![0, 1, 2, 2, 3, 0];
+
+        Self {
+            source: GeometrySource::Internal("Plane"),
+            state: GeometryState::Memory(Mesh {
+                geometry_type: GeometryType::Tris(indices),
+                vertices,
+                normals: Some(normals),
                 uvs,
             }),
             instances: FxHashMap::default(),
@@ -220,32 +264,123 @@ impl Geometry {
     pub fn cube(size: Vec3) -> Self {
         let half_size = size / 2.0;
         let vertices = vec![
+            // Top
+            Vec3(-half_size.0, half_size.1, -half_size.2),
+            Vec3(half_size.0, half_size.1, -half_size.2),
+            Vec3(half_size.0, half_size.1, half_size.2),
+            Vec3(-half_size.0, half_size.1, half_size.2),
+
+            // Bottom
+            Vec3(-half_size.0, -half_size.1, -half_size.2),
+            Vec3(-half_size.0, -half_size.1, half_size.2),
+            Vec3(half_size.0, -half_size.1, half_size.2),
+            Vec3(half_size.0, -half_size.1, -half_size.2),
+
+            // Right
+            Vec3(half_size.0, -half_size.1, -half_size.2),
+            Vec3(half_size.0, -half_size.1, half_size.2),
+            Vec3(half_size.0, half_size.1, half_size.2),
+            Vec3(half_size.0, half_size.1, -half_size.2),
+
+            // Left
+            Vec3(-half_size.0, -half_size.1, -half_size.2),
+            Vec3(-half_size.0, half_size.1, -half_size.2),
+            Vec3(-half_size.0, half_size.1, half_size.2),
+            Vec3(-half_size.0, -half_size.1, half_size.2),
+
+            // Front
             Vec3(-half_size.0, -half_size.1, -half_size.2),
             Vec3(half_size.0, -half_size.1, -half_size.2),
             Vec3(half_size.0, half_size.1, -half_size.2),
             Vec3(-half_size.0, half_size.1, -half_size.2),
+
+            // Back
             Vec3(-half_size.0, -half_size.1, half_size.2),
-            Vec3(half_size.0, -half_size.1, half_size.2),
-            Vec3(half_size.0, half_size.1, half_size.2),
             Vec3(-half_size.0, half_size.1, half_size.2),
+            Vec3(half_size.0, half_size.1, half_size.2),
+            Vec3(half_size.0, -half_size.1, half_size.2),
         ];
-        let indices = vec![
-            0, 1, 2, 2, 3, 0, // Front
-            1, 5, 6, 6, 2, 1, // Right
-            5, 4, 7, 7, 6, 5, // Back
-            4, 0, 3, 3, 7, 4, // Left
-            3, 2, 6, 6, 7, 3, // Top
-            4, 5, 1, 1, 0, 4, // Bottom
+        let normals = vec![
+            // Top
+            Vec3(0.0, 1.0, 0.0),
+            Vec3(0.0, 1.0, 0.0),
+            Vec3(0.0, 1.0, 0.0),
+            Vec3(0.0, 1.0, 0.0),
+
+            // Bottom
+            Vec3(0.0, -1.0, 0.0),
+            Vec3(0.0, -1.0, 0.0),
+            Vec3(0.0, -1.0, 0.0),
+            Vec3(0.0, -1.0, 0.0),
+
+            // Right
+            Vec3(1.0, 0.0, 0.0),
+            Vec3(1.0, 0.0, 0.0),
+            Vec3(1.0, 0.0, 0.0),
+            Vec3(1.0, 0.0, 0.0),
+
+            // Left
+            Vec3(-1.0, 0.0, 0.0),
+            Vec3(-1.0, 0.0, 0.0),
+            Vec3(-1.0, 0.0, 0.0),
+            Vec3(-1.0, 0.0, 0.0),
+
+            // Front
+            Vec3(0.0, 0.0, -1.0),
+            Vec3(0.0, 0.0, -1.0),
+            Vec3(0.0, 0.0, -1.0),
+            Vec3(0.0, 0.0, -1.0),
+
+            // Back
+            Vec3(0.0, 0.0, 1.0),
+            Vec3(0.0, 0.0, 1.0),
+            Vec3(0.0, 0.0, 1.0),
+            Vec3(0.0, 0.0, 1.0),
         ];
         let uvs = vec![
+            // Top
             Vec2(0.0, 1.0),
             Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
             Vec2(0.0, 0.0),
-            Vec2(1.0, 1.0),
+
+            // Bottom
             Vec2(0.0, 1.0),
             Vec2(0.0, 0.0),
             Vec2(1.0, 0.0),
+            Vec2(1.0, 1.0),
+
+            // Right
+            Vec2(0.0, 1.0),
+            Vec2(0.0, 0.0),
+            Vec2(1.0, 0.0),
+            Vec2(1.0, 1.0),
+
+            // Left
+            Vec2(0.0, 1.0),
+            Vec2(1.0, 1.0),
+            Vec2(1.0, 0.0),
+            Vec2(0.0, 0.0),
+
+            // Front
+            Vec2(0.0, 1.0),
+            Vec2(1.0, 1.0),
+            Vec2(1.0, 0.0),
+            Vec2(0.0, 0.0),
+
+            // Back
+            Vec2(0.0, 1.0),
+            Vec2(0.0, 0.0),
+            Vec2(1.0, 0.0),
+            Vec2(1.0, 1.0),
+        ];
+        let indices = vec![
+            0, 1, 2, 2, 3, 0, // Top
+            4, 5, 6, 6, 7, 4, // Bottom
+            8, 9, 10, 10, 11, 8, // Right
+            12, 13, 14, 14, 15, 12, // Left
+            16, 17, 18, 18, 19, 16, // Front
+            20, 21, 22, 22, 23, 20, // Back
         ];
 
         Self {
@@ -253,7 +388,7 @@ impl Geometry {
             state: GeometryState::Memory(Mesh {
                 geometry_type: GeometryType::Tris(indices),
                 vertices,
-                // normals: None,
+                normals: Some(normals),
                 uvs,
             }),
             instances: FxHashMap::default(),
