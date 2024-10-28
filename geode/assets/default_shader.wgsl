@@ -97,6 +97,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var specular_strength = vec3<f32>(0.0, 0.0, 0.0);
     let color = textureSample(texture, sampler_in, in.uv);
     let normal = normalize(in.normal);
+    let view_dir = normalize(camera.view_pos - in.world_pos);
 
     for (var i = 0u; i < lights.num_point_lights; i = i + 1u) {
         let light = lights.point_lights[i];
@@ -105,7 +106,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let diffuse_strength = max(dot(normal, light_dir), 0.0);
         diffuse_color += light.color * diffuse_strength;
 
-        let view_dir = normalize(camera.view_pos - in.world_pos);
         let half_dir = normalize(light_dir + view_dir);
         specular_strength += pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
     }
@@ -114,8 +114,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let light = lights.spot_lights[i];
         let light_dir = normalize(light.direction);
         let sl_dir = normalize(light.position - in.world_pos);
-        let sv_dir = normalize(camera.view_pos - in.world_pos);
-        let half_dir = normalize(sl_dir + sv_dir);
+        let half_dir = normalize(sl_dir + view_dir);
 
         let dot = dot(sl_dir, -light_dir);
         let in_light = smoothstep(light.limit, light.limit + light.decay, dot);
