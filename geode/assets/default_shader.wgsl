@@ -54,8 +54,6 @@ var<storage, read> lights: Lights;
 @group(1) @binding(0)
 var<uniform> camera: Camera;
 
-const light_pos: vec3<f32> = vec3<f32>(0.0, 500.0, -500.0);
-
 @vertex
 fn vs_main(
     mesh: VertexInput,
