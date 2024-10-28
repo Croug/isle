@@ -221,6 +221,19 @@ impl<'a> Renderer<'a> {
         }
     }
 
+    fn iter_cameras(&self) -> impl Iterator<Item = (usize, &Camera)> {
+        let main_camera =
+            self.cameras
+            .get(self.main_camera)
+            .map(|c| (self.main_camera, c));
+
+        self.cameras
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != self.main_camera)
+            .chain(main_camera)
+    }
+
     fn render_geometries_by_material<'r>(
         &self,
         material_id: usize,
@@ -259,14 +272,12 @@ impl<'a> Renderer<'a> {
                 label: Some("Render Encoder"),
             });
 
-        self.cameras
-            .iter()
-            .enumerate()
+        self.iter_cameras()
             .for_each(|(camera_id, camera)| {
                 let view = if camera_id == self.main_camera {
                     &view
                 } else {
-                    &self.cameras[self.main_camera].depth_texture.view()
+                    self.textures[camera.texture_id].view()
                 };
                 let mut render_pass = camera.begin_render_pass(&mut encoder, view);
 
