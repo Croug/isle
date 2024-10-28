@@ -5,11 +5,13 @@ use wgpu::util::DeviceExt;
 
 use crate::renderer::Renderer;
 
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct PointLight {
     pub position: Vec3,
     pub color: Vec3,
 }
 
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct SpotLight {
     pub position: Vec3,
     pub color: Vec3,
@@ -126,6 +128,32 @@ impl Lighting {
         buffer
     }
 
+    pub fn point_light(&self, index: usize) -> Option<&PointLight> {
+        self.point_lights.get(index)
+    }
+
+    pub fn spot_light(&self, index: usize) -> Option<&SpotLight> {
+        self.spot_lights.get(index)
+    }
+
+    pub fn update_point_light(&mut self, index: usize, light: PointLight) {
+        if let Some(point_light) = self.point_lights.get(index) {
+            if point_light != &light {
+                self.point_lights[index] = light;
+                self.dirty.store(true, Ordering::SeqCst);
+            }
+        }
+    }
+
+    pub fn update_spot_light(&mut self, index: usize, light: SpotLight) {
+        if let Some(spot_light) = self.spot_lights.get(index) {
+            if spot_light != &light {
+                self.spot_lights[index] = light;
+                self.dirty.store(true, Ordering::SeqCst);
+            }
+        }
+    }
+
     pub(crate) fn update_buffer(&self, queue: &wgpu::Queue) {
         if self.dirty.swap(false, Ordering::SeqCst) {
             queue.write_buffer(&self.buffer, 0, &self.to_raw());
@@ -150,14 +178,16 @@ impl Lighting {
         })
     }
 
-    pub fn add_point_light(&mut self, light: PointLight) {
+    pub fn add_point_light(&mut self, light: PointLight) -> usize {
         self.point_lights.push(light);
         self.dirty.store(true, Ordering::SeqCst);
+        self.point_lights.len() - 1
     }
 
-    pub fn add_spot_light(&mut self, light: SpotLight) {
+    pub fn add_spot_light(&mut self, light: SpotLight) -> usize {
         self.spot_lights.push(light);
         self.dirty.store(true, Ordering::SeqCst);
+        self.spot_lights.len() - 1
     }
 }
 
