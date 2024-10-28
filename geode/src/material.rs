@@ -48,7 +48,11 @@ impl Material {
             renderer.device().create_shader_module(wgpu::include_wgsl!("../assets/default_shader.wgsl"));
         let pipeline_layout = renderer.device().create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Default Pipeline Layout"),
-            bind_group_layouts: &[renderer.camera_bind_group_layout(), &bind_group_layout],
+            bind_group_layouts: &[
+                renderer.lighting_bind_group_layout(),
+                renderer.camera_bind_group_layout(),
+                &bind_group_layout
+                ],
             push_constant_ranges: &[],
         });
 

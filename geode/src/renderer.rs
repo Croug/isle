@@ -3,7 +3,7 @@ use std::vec;
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, material::{IntoBindGroup, Material}, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, lighting::Lighting, material::{IntoBindGroup, Material}, texture::Texture};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -41,6 +41,7 @@ pub struct Renderer<'a> {
 
     main_camera: usize,
 
+    lighting: Lighting,
     cameras: Vec<Camera>,
     geometries: Vec<Geometry>,
     textures: Vec<Texture>,
@@ -99,6 +100,7 @@ impl<'a> Renderer<'a> {
         };
 
         let camera_bind_group_layout = Camera::bind_group_layout(&device);
+        let lighting = Lighting::new(&device, Default::default());
 
         let mut out = Self {
             surface,
@@ -111,6 +113,7 @@ impl<'a> Renderer<'a> {
 
             main_camera: 0,
 
+            lighting,
             cameras: Vec::new(),
             geometries: Vec::new(),
             textures: Vec::new(),
@@ -128,6 +131,10 @@ impl<'a> Renderer<'a> {
         out.cameras.push(main_camera);
 
         Ok(out)
+    }
+
+    pub fn lighting_mut(&mut self) -> &mut Lighting {
+        &mut self.lighting
     }
 
     pub fn camera_mut(&mut self, camera_id: usize) -> &mut Camera {
@@ -166,6 +173,10 @@ impl<'a> Renderer<'a> {
         self.size
     }
 
+    pub fn lighting(&self) -> &Lighting {
+        &self.lighting
+    }
+
     pub fn camera(&self, camera_id: usize) -> &Camera {
         &self.cameras[camera_id]
     }
@@ -188,6 +199,10 @@ impl<'a> Renderer<'a> {
 
     pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
         &self.camera_bind_group_layout
+    }
+
+    pub fn lighting_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+        &self.lighting.bind_group_layout
     }
 
     pub fn resize(&mut self, new_size: Vec2) {
@@ -255,7 +270,11 @@ impl<'a> Renderer<'a> {
                 };
                 let mut render_pass = camera.begin_render_pass(&mut encoder, view);
 
+                self.lighting.update_buffer(&self.queue);
+                render_pass.set_bind_group(0, &self.lighting.bind_group, &[]);
+
                 camera.update_buffer(&self.queue);
+                render_pass.set_bind_group(1, &camera.bind_group, &[]);
 
                 self.materials
                     .iter()
@@ -264,7 +283,7 @@ impl<'a> Renderer<'a> {
                         render_pass.set_pipeline(&material.pipeline);
 
                         material.instances.iter().enumerate().for_each(|(instance_id, instance)| {
-                            render_pass.set_bind_group(1, &instance.bind_group, &[]);
+                            render_pass.set_bind_group(2, &instance.bind_group, &[]);
                             self.render_geometries_by_material(material_id, instance_id, &mut render_pass);
                         });
                     })

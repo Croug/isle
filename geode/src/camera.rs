@@ -186,8 +186,6 @@ impl Camera {
             timestamp_writes: None,
         });
 
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
-
         render_pass
     }
 

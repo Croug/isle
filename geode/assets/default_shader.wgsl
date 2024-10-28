@@ -8,6 +8,7 @@ struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) normal: vec3<f32>,
     @location(1) uv: vec2<f32>,
+    @location(2) world_pos: vec3<f32>,
 };
 
 struct InstanceInput {
@@ -22,10 +23,38 @@ struct InstanceInput {
 
 struct Camera {
     view_proj: mat4x4<f32>,
+    view_pos: vec3<f32>,
+};
+
+struct PointLight {
+    position: vec3<f32>,
+    color: vec3<f32>,
+};
+
+struct SpotLight {
+    position: vec3<f32>,
+    color: vec3<f32>,
+    direction: vec3<f32>,
+    limit: f32,
+    decay: f32,
+}
+
+const MAX_LIGHTS: u32 = 128;
+struct Lights {
+    ambient_color: vec3<f32>,
+    ambient_intensity: f32,
+    num_point_lights: u32,
+    num_spot_lights: u32,
+    point_lights: array<PointLight, MAX_LIGHTS>,
+    spot_lights: array<SpotLight, MAX_LIGHTS>,
 };
 
 @group(0) @binding(0)
+var<storage, read> lights: Lights;
+@group(1) @binding(0)
 var<uniform> camera: Camera;
+
+const light_pos: vec3<f32> = vec3<f32>(0.0, 500.0, -500.0);
 
 @vertex
 fn vs_main(
@@ -50,18 +79,53 @@ fn vs_main(
     out.normal = normal_mat * mesh.normal;
     out.position = camera.view_proj * model * vec4<f32>(mesh.position, 1.0);
 
+    out.world_pos = (model * vec4<f32>(mesh.position, 1.0)).xyz;
+
     return out;
 }
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var texture: texture_2d<f32>;
-@group(1) @binding(1)
+@group(2) @binding(1)
 var sampler_in: sampler;
+
+const shininess: f32 = 35.0;
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    var diffuse_color = lights.ambient_color * lights.ambient_intensity;
+    var specular_strength = vec3<f32>(0.0, 0.0, 0.0);
+    let color = textureSample(texture, sampler_in, in.uv);
     let normal = normalize(in.normal);
-    let direction = normalize(vec3<f32>(0.0, -1.0, 1.0));
-    let light = dot(normal, -direction) + 0.1;
-    return textureSample(texture, sampler_in, in.uv) * light;
+
+    for (var i = 0u; i < lights.num_point_lights; i = i + 1u) {
+        let light = lights.point_lights[i];
+        let light_dir = normalize(light.position - in.world_pos);
+
+        let diffuse_strength = max(dot(normal, light_dir), 0.0);
+        diffuse_color += light.color * diffuse_strength;
+
+        let view_dir = normalize(camera.view_pos - in.world_pos);
+        let half_dir = normalize(light_dir + view_dir);
+        specular_strength += pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
+    }
+
+    for (var i = 0u; i < lights.num_spot_lights; i = i + 1u) {
+        let light = lights.spot_lights[i];
+        let light_dir = normalize(light.direction);
+        let sl_dir = normalize(light.position - in.world_pos);
+        let sv_dir = normalize(camera.view_pos - in.world_pos);
+        let half_dir = normalize(sl_dir + sv_dir);
+
+        let dot = dot(sl_dir, -light_dir);
+        let in_light = smoothstep(light.limit, light.limit + light.decay, dot);
+        let diffuse_strength = in_light * dot(normal, sl_dir);
+        diffuse_color += light.color * diffuse_strength;
+        specular_strength += in_light * pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
+    }
+
+    return vec4<f32>(
+        color.rgb * (diffuse_color.rgb + specular_strength),
+        color.a
+    );
 }
