@@ -1,9 +1,7 @@
-use std::{f32::consts::PI, sync::atomic::{AtomicBool, Ordering}};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use isle_math::{rotation::Angle, vector::d3::Vec3};
 use wgpu::util::DeviceExt;
-
-use crate::renderer::Renderer;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct PointLight {

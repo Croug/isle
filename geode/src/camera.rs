@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, sync::atomic::{AtomicBool, Ordering}};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use isle_math::{
     matrix::Mat4,
@@ -162,7 +162,7 @@ impl Camera {
         encoder: &'a mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
     ) -> wgpu::RenderPass {
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(format!("Render Pass: {}", self.label).as_str()),
             color_attachments: &[
                 Some(wgpu::RenderPassColorAttachment {
