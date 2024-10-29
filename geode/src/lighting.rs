@@ -1,6 +1,6 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{f32::consts::PI, sync::atomic::{AtomicBool, Ordering}};
 
-use isle_math::vector::d3::Vec3;
+use isle_math::{rotation::Angle, vector::d3::Vec3};
 use wgpu::util::DeviceExt;
 
 use crate::renderer::Renderer;
@@ -16,8 +16,8 @@ pub struct SpotLight {
     pub position: Vec3,
     pub color: Vec3,
     pub direction: Vec3,
-    pub limit: f32,
-    pub decay: f32,
+    pub outer: Angle,
+    pub inner: Angle,
 }
 
 pub struct Lighting {
@@ -207,12 +207,12 @@ impl SpotLight {
     pub(crate) fn to_raw(&self) -> SpotLightRaw {
         SpotLightRaw {
             position: self.position.into(),
-            _padding0: 0,
             color: self.color.into(),
-            _padding1: 0,
             direction: self.direction.into(),
-            limit: self.limit,
-            decay: self.decay,
+            outer: self.outer.to_radians().cos(),
+            inner: self.outer.to_radians().cos(),
+            _padding0: 0,
+            _padding1: 0,
             _padding2: [0; 3],
         }
     }
@@ -235,7 +235,7 @@ pub(crate) struct SpotLightRaw {
     color: [f32; 3],
     _padding1: u32,
     direction: [f32; 3],
-    limit: f32,
-    decay: f32,
+    outer: f32,
+    inner: f32,
     _padding2: [u32; 3],
 }
