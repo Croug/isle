@@ -207,7 +207,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
@@ -235,6 +235,13 @@ impl Texture {
         }
     }
 
+    pub fn texture(&self) -> &wgpu::Texture {
+        if let TextureState::Gpu(GpuTexture { texture, .. }) = &self.state {
+            &texture
+        } else {
+            panic!("Texture is not in GPU state");
+        }
+    }
     pub fn view(&self) -> &wgpu::TextureView {
         if let TextureState::Gpu(GpuTexture { view, .. }) = &self.state {
             &view
