@@ -5,12 +5,12 @@ use isle_math::{
     rotation::{quaternion::Quaternion, Angle, Rotation},
     vector::{d2::Vec2, d3::Vec3},
 };
-use wgpu::{util::DeviceExt, BindGroupDescriptor};
+use wgpu::util::DeviceExt;
 
-use crate::{renderer::Renderer, texture::Texture};
+use crate::{renderer::Renderer, texture::{Texture, TextureId}};
 
 pub struct Camera {
-    pub(crate) texture_id: usize,
+    pub(crate) texture_id: TextureId,
     pub(crate) label: &'static str,
     pub(crate) clear_color: wgpu::Color,
     pub(crate) depth_texture: Texture,
@@ -112,7 +112,7 @@ impl Camera {
         );
 
         let bind_group = renderer.device().create_bind_group(
-            &BindGroupDescriptor {
+            &wgpu::BindGroupDescriptor {
                 layout: renderer.camera_bind_group_layout(),
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -155,6 +155,10 @@ impl Camera {
             }],
             label: Some("Camera Bind Group Layout"),
         })
+    }
+
+    pub fn texture_id(&self) -> TextureId {
+        self.texture_id
     }
 
     pub fn begin_render_pass<'a>(

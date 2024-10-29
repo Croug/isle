@@ -5,14 +5,15 @@ use crate::{
 };
 
 pub trait IntoBindGroup {
-    fn into_bind_group<'a>(&'a self, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>);
+    fn into_bind_group<'a>(&'a self, data: &'a Renderer, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>);
 }
 
-impl<T: Fn(&mut Vec<wgpu::BindGroupEntry>)> IntoBindGroup for T {
-    fn into_bind_group(&self, bindings: &mut Vec<wgpu::BindGroupEntry>) {
-        self(bindings);
+impl<T: Fn(&Renderer, &mut Vec<wgpu::BindGroupEntry>)> IntoBindGroup for T {
+    fn into_bind_group(&self, data: &Renderer, bindings: &mut Vec<wgpu::BindGroupEntry>) {
+        self(data, bindings);
     }
 }
+
 
 pub struct Material {
     pub(crate) bind_group_layout: wgpu::BindGroupLayout,
@@ -157,12 +158,13 @@ impl Material {
         }
     }
 
-    pub fn instantiate(&mut self, device: &wgpu::Device, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
+    pub fn instantiate(renderer: &mut Renderer, material_id: usize, entries: &dyn IntoBindGroup, label: &str) -> usize {
         let mut bindings = Vec::new();
-        entries.into_bind_group(&mut bindings);
-        let instance = MaterialInstance::new(device, self, label, bindings.as_slice());
-        self.instances.push(instance);
-        self.instances.len() - 1
+        entries.into_bind_group(&renderer, &mut bindings);
+        let instance = MaterialInstance::new(renderer.device(), renderer.material(material_id), label, bindings.as_slice());
+        let material = renderer.material_mut(material_id);
+        material.instances.push(instance);
+        material.instances.len() - 1
     }
 }
 

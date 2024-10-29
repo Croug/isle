@@ -5,6 +5,17 @@ use isle_math::vector::d2::Vec2;
 
 use crate::{material::IntoBindGroup, renderer::Renderer};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct TextureId(pub usize);
+
+impl IntoBindGroup for TextureId {
+    fn into_bind_group<'a>(&'a self, data: &'a Renderer, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>) {
+        data
+            .texture(*self)
+            .into_bind_group(data, bindings);
+    }
+}
+
 pub enum TextureSource {
     Disk(PathBuf),
     Internal(&'static str),
@@ -266,7 +277,7 @@ impl Texture {
 }
 
 impl IntoBindGroup for Texture {
-    fn into_bind_group<'a>(&'a self, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>) {
+    fn into_bind_group<'a>(&'a self, _: &Renderer, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>) {
         let next_index = bindings.len() as u32;
         bindings.extend(vec![
             wgpu::BindGroupEntry {

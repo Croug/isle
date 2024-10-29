@@ -3,7 +3,7 @@ use std::vec;
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, lighting::Lighting, material::{IntoBindGroup, Material}, texture::Texture};
+use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, lighting::Lighting, material::{IntoBindGroup, Material}, texture::{Texture, TextureId}};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -192,8 +192,8 @@ impl<'a> Renderer<'a> {
         &self.materials[material_id]
     }
 
-    pub fn texture(&self, texture_id: usize) -> &Texture {
-        &self.textures[texture_id]
+    pub fn texture(&self, texture_id: TextureId) -> &Texture {
+        &self.textures[texture_id.0]
     }
 
     pub fn main_camera(&self) -> &Camera {
@@ -344,9 +344,9 @@ impl<'a> Renderer<'a> {
         self.cameras.len() - 1
     }
 
-    pub fn add_texture(&mut self, texture: Texture) -> usize {
+    pub fn add_texture(&mut self, texture: Texture) -> TextureId {
         self.textures.push(texture);
-        self.textures.len() - 1
+        TextureId(self.textures.len() - 1)
     }
     
     pub fn add_geometry(&mut self, geometry: Geometry) -> usize {
@@ -368,6 +368,6 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn instantiate_material(&mut self, material_id: usize, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
-        self.materials[material_id].instantiate(&self.device, label, entries)
+        Material::instantiate(self, material_id, entries, label)
     }
 }
