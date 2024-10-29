@@ -35,8 +35,8 @@ struct SpotLight {
     position: vec3<f32>,
     color: vec3<f32>,
     direction: vec3<f32>,
-    limit: f32,
-    decay: f32,
+    outer: f32,
+    inner: f32,
 }
 
 const MAX_LIGHTS: u32 = 128;
@@ -115,8 +115,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let half_dir = normalize(sl_dir + view_dir);
 
         let dot = dot(sl_dir, -light_dir);
-        let in_light = smoothstep(light.limit, light.limit + light.decay, dot);
-        let diffuse_strength = in_light * dot(normal, sl_dir);
+        let in_light = clamp(
+            (dot - light.outer) / (light.inner - light.outer),
+            0.0,
+            1.0
+        );
+        let diffuse_strength = in_light * max(dot(normal, sl_dir), 0.0);
         diffuse_color += light.color * diffuse_strength;
         specular_strength += in_light * pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
     }
