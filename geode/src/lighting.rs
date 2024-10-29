@@ -9,12 +9,14 @@ use crate::renderer::Renderer;
 pub struct PointLight {
     pub position: Vec3,
     pub color: Vec3,
+    pub intensity: f32,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct SpotLight {
     pub position: Vec3,
     pub color: Vec3,
+    pub intensity: f32,
     pub direction: Vec3,
     pub outer: Angle,
     pub inner: Angle,
@@ -195,9 +197,9 @@ impl PointLight {
     pub(crate) fn to_raw(&self) -> PointLightRaw {
         PointLightRaw {
             position: self.position.into(),
-            _padding0: 0,
             color: self.color.into(),
-            _padding1: 0,
+            inensity: self.intensity,
+            _padding0: 0,
         }
     }
 
@@ -209,11 +211,11 @@ impl SpotLight {
             position: self.position.into(),
             color: self.color.into(),
             direction: self.direction.into(),
+            intensity: self.intensity,
             outer: self.outer.to_radians().cos(),
             inner: self.outer.to_radians().cos(),
             _padding0: 0,
-            _padding1: 0,
-            _padding2: [0; 3],
+            _padding1: [0; 3],
         }
     }
 }
@@ -224,7 +226,7 @@ pub(crate) struct PointLightRaw {
     position: [f32; 3],
     _padding0: u32,
     color: [f32; 3],
-    _padding1: u32,
+    inensity: f32,
 }
 
 #[repr(C)]
@@ -233,9 +235,9 @@ pub(crate) struct SpotLightRaw {
     position: [f32; 3],
     _padding0: u32,
     color: [f32; 3],
-    _padding1: u32,
+    intensity: f32,
     direction: [f32; 3],
     outer: f32,
     inner: f32,
-    _padding2: [u32; 3],
+    _padding1: [u32; 3],
 }

@@ -29,11 +29,13 @@ struct Camera {
 struct PointLight {
     position: vec3<f32>,
     color: vec3<f32>,
+    intensity: f32,
 };
 
 struct SpotLight {
     position: vec3<f32>,
     color: vec3<f32>,
+    intensity: f32,
     direction: vec3<f32>,
     outer: f32,
     inner: f32,
@@ -92,7 +94,6 @@ const shininess: f32 = 35.0;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var diffuse_color = lights.ambient_color * lights.ambient_intensity;
-    var specular_strength = vec3<f32>(0.0, 0.0, 0.0);
     let color = textureSample(texture, sampler_in, in.uv);
     let normal = normalize(in.normal);
     let view_dir = normalize(camera.view_pos - in.world_pos);
@@ -102,10 +103,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let light_dir = normalize(light.position - in.world_pos);
 
         let diffuse_strength = max(dot(normal, light_dir), 0.0);
-        diffuse_color += light.color * diffuse_strength;
+        let local_diffuse = light.color * diffuse_strength;
 
         let half_dir = normalize(light_dir + view_dir);
-        specular_strength += pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
+        let specular_strength = pow(max(dot(normal, half_dir), 0.0), shininess);
+        let specular_color = light.color * specular_strength;
+
+        let distance = length(light.position - in.world_pos);
+        let attenuation = clamp(light.intensity / distance, 0.0, 1.0);
+
+        diffuse_color += (local_diffuse + specular_color) * attenuation;
     }
 
     for (var i = 0u; i < lights.num_spot_lights; i = i + 1u) {
@@ -121,12 +128,19 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             1.0
         );
         let diffuse_strength = in_light * max(dot(normal, sl_dir), 0.0);
-        diffuse_color += light.color * diffuse_strength;
-        specular_strength += in_light * pow(max(dot(normal, half_dir), 0.0), shininess) * light.color;
+        let local_diffuse = light.color * diffuse_strength;
+
+        let specular_strength = in_light * pow(max(dot(normal, half_dir), 0.0), shininess);
+        let specular_color = light.color * specular_strength;
+
+        let distance = length(light.position - in.world_pos);
+        let attenuation = clamp(light.intensity / distance, 0.0, 1.0);
+
+        diffuse_color += (local_diffuse + specular_color) * attenuation;
     }
 
     return vec4<f32>(
-        color.rgb * (diffuse_color.rgb + specular_strength),
+        color.rgb * diffuse_color.rgb,
         color.a
     );
 }
