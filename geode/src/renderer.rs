@@ -35,6 +35,7 @@ pub struct Renderer<'a> {
     config: wgpu::SurfaceConfiguration,
     size: Vec2,
     camera_bind_group_layout: wgpu::BindGroupLayout,
+    intermediate_texture: Texture,
 
     #[allow(dead_code)]
     window: wgpu::SurfaceTarget<'a>,
@@ -101,6 +102,7 @@ impl<'a> Renderer<'a> {
 
         let camera_bind_group_layout = Camera::bind_group_layout(&device);
         let lighting = Lighting::new(&device, Default::default());
+        let intermediate_texture = Texture::create_camera_texture(size, &device, "Intermediate Camera texture", true);
 
         let mut out = Self {
             surface,
@@ -110,6 +112,7 @@ impl<'a> Renderer<'a> {
             size,
             window,
             camera_bind_group_layout,
+            intermediate_texture,
 
             main_camera: 0,
 
@@ -274,12 +277,14 @@ impl<'a> Renderer<'a> {
 
         self.iter_cameras()
             .for_each(|(camera_id, camera)| {
-                let view = if camera_id == self.main_camera {
-                    &view
+                let camera_view = self.texture(camera.texture_id).view();
+                let intermediate_view = self.intermediate_texture.view();
+                let (view, surface_view) = if camera_id == self.main_camera {
+                    (intermediate_view, Some(&view))
                 } else {
-                    self.textures[camera.texture_id].view()
+                    (camera_view, None)
                 };
-                let mut render_pass = camera.begin_render_pass(&mut encoder, view);
+                let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_view);
 
                 self.lighting.update_buffer(&self.queue);
                 render_pass.set_bind_group(0, &self.lighting.bind_group, &[]);
@@ -291,7 +296,11 @@ impl<'a> Renderer<'a> {
                     .iter()
                     .enumerate()
                     .for_each(|(material_id, material)| {
-                        render_pass.set_pipeline(&material.pipeline);
+                        if camera_id == self.main_camera {
+                            render_pass.set_pipeline(&material.main_camera_pipeline);
+                        } else {
+                            render_pass.set_pipeline(&material.standard_pipeline);
+                        }
 
                         material.instances.iter().enumerate().for_each(|(instance_id, instance)| {
                             render_pass.set_bind_group(2, &instance.bind_group, &[]);
@@ -300,10 +309,39 @@ impl<'a> Renderer<'a> {
                     })
             });
 
+        let main_camera_texture = self.main_camera().texture_id;
+        let main_camera_texture = self.texture(main_camera_texture);
+
+        encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTextureBase {
+                texture: self.intermediate_texture.texture(),
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyTextureBase {
+                texture: main_camera_texture.texture(),
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.size.0 as u32,
+                height: self.size.1 as u32,
+                depth_or_array_layers: 1,
+            },
+        );
+
         self.queue.submit(Some(encoder.finish()));
         frame.present();
 
         Ok(())
+    }
+
+    pub fn add_camera(&mut self, settings: CameraCreationSettings) -> usize {
+        let camera = Camera::new(self, &settings);
+        self.cameras.push(camera);
+        self.cameras.len() - 1
     }
 
     pub fn add_texture(&mut self, texture: Texture) -> usize {

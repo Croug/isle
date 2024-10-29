@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use image::{GenericImageView, ImageError};
 use isle_math::vector::d2::Vec2;
 
-use crate::material::IntoBindGroup;
+use crate::{material::IntoBindGroup, renderer::Renderer};
 
 pub enum TextureSource {
     Disk(PathBuf),
@@ -195,13 +195,14 @@ impl Texture {
         size: Vec2,
         device: &wgpu::Device,
         label: &'static str,
+        copyable: bool,
     ) -> Self {
         let size_wgpu = wgpu::Extent3d {
             width: size.0 as u32,
             height: size.1 as u32,
             depth_or_array_layers: 1, 
         };
-        let desc = wgpu::TextureDescriptor {
+        let mut desc = wgpu::TextureDescriptor {
             label: Some(label),
             size: size_wgpu,
             mip_level_count: 1,
@@ -211,8 +212,14 @@ impl Texture {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
-        let texture = device.create_texture(&desc);
 
+        if copyable {
+            desc.usage |= wgpu::TextureUsages::COPY_SRC;
+        } else {
+            desc.usage |= wgpu::TextureUsages::COPY_DST;
+        }
+
+        let texture = device.create_texture(&desc);
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,

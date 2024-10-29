@@ -91,8 +91,13 @@ var sampler_in: sampler;
 
 const shininess: f32 = 35.0;
 
+struct FragmentOutput {
+    @location(0) texture_out: vec4<f32>,
+    @location(1) surface_out: vec4<f32>,
+}
+
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_main(in: VertexOutput) -> FragmentOutput {
     var diffuse_color = lights.ambient_color * lights.ambient_intensity;
     let color = textureSample(texture, sampler_in, in.uv);
     let normal = normalize(in.normal);
@@ -139,8 +144,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         diffuse_color += (local_diffuse + specular_color) * attenuation;
     }
 
-    return vec4<f32>(
+    let out_color = vec4<f32>(
         color.rgb * diffuse_color.rgb,
         color.a
     );
+
+    var out: FragmentOutput;
+    out.texture_out = out_color;
+    out.surface_out = out_color;
+
+    return out;
 }

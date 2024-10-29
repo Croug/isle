@@ -82,7 +82,7 @@ impl Default for CameraCreationSettings {
 
 impl Camera {
     pub fn new(renderer: &mut Renderer, settings: &CameraCreationSettings) -> Self {
-        let texture = Texture::create_camera_texture(settings.viewport, renderer.device(), settings.label);
+        let texture = Texture::create_camera_texture(settings.viewport, renderer.device(), settings.label, false);
         let texture_id = renderer.add_texture(texture);
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
@@ -161,19 +161,33 @@ impl Camera {
         &'a self,
         encoder: &'a mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
+        surface_view: Option<&wgpu::TextureView>,
     ) -> wgpu::RenderPass {
+        let surface_view = surface_view.map(|view| {
+            wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(self.clear_color),
+                    store: wgpu::StoreOp::Store,
+                },
+            }
+        });
+        let end = surface_view.is_some() as usize + 1;
+        let attachments = [
+            Some(wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(self.clear_color),
+                    store: wgpu::StoreOp::Store,
+                },
+            }),
+            surface_view,
+        ];
         let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(format!("Render Pass: {}", self.label).as_str()),
-            color_attachments: &[
-                Some(wgpu::RenderPassColorAttachment {
-                    view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(self.clear_color),
-                        store: wgpu::StoreOp::Store,
-                    },
-                }),
-            ],
+            color_attachments: &attachments[..end],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.depth_texture.view(),
                 depth_ops: Some(wgpu::Operations {
