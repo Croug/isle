@@ -297,9 +297,22 @@ impl Mul<Vec3> for Rotation {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum Angle {
     Radians(f32),
     Degrees(f32),
+}
+
+impl PartialEq for Angle {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_radians() == other.to_radians()
+    }
+}
+
+impl PartialOrd for Angle {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.to_radians().partial_cmp(&other.to_radians())
+    }
 }
 
 impl Angle {
