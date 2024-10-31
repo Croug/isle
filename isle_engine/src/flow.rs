@@ -135,7 +135,7 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
         self.hooks.push(Box::new(plugin));
         self
     }
-    pub fn with_plugin<P: FnMut(Self) -> Self>(self, mut plugin: P) -> Self {
+    pub fn with_plugin<P: FnOnce(Self) -> Self>(self, plugin: P) -> Self {
         plugin(self)
     }
     pub fn build(self) -> Flow<S, E> {
