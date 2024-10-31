@@ -41,11 +41,17 @@ impl std::hash::Hash for BorrowSignature {
     }
 }
 
-pub struct ECS {
+pub struct SystemSet {
     systems: Vec<Box<dyn System>>,
 }
 
-impl ECS {
+impl std::fmt::Debug for SystemSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("SystemSet({})", self.systems.len()))
+    }
+}
+
+impl SystemSet {
     pub fn new() -> Self {
         Self {
             systems: Vec::new(),

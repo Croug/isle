@@ -1,13 +1,13 @@
 use std::cell::UnsafeCell;
 
-use isle_ecs::{ecs::ECS, world::World};
+use isle_ecs::{ecs::SystemSet, world::World};
 
 use crate::schedule::Schedule;
 
 pub trait Executor {
     fn run<T: Schedule + Sized>(
         &mut self,
-        ecs: &UnsafeCell<ECS>,
+        ecs: &mut SystemSet,
         world: &UnsafeCell<World>,
         schedule: &T,
     );
@@ -16,13 +16,12 @@ pub trait Executor {
 impl Executor for isle_ecs::executor::Executor {
     fn run<T: Schedule + Sized>(
         &mut self,
-        ecs: &UnsafeCell<ECS>,
+        system_set: &mut SystemSet,
         world: &UnsafeCell<World>,
         schedule: &T,
     ) {
         for system_id in schedule.iter() {
-            let ecs = unsafe { &mut *ecs.get() };
-            ecs.run_system_by_id(system_id, world);
+            system_set.run_system_by_id(system_id, world);
         }
     }
 }

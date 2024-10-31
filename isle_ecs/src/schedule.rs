@@ -1,6 +1,6 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::ecs::ECS;
+use crate::ecs::SystemSet;
 
 pub struct Scheduler;
 
@@ -10,9 +10,9 @@ pub struct Schedule {
 }
 
 impl Schedule {
-    pub fn from_ecs(ecs: &ECS) -> Self {
+    pub fn from_system_set(systems: &SystemSet) -> Self {
         Self {
-            systems: ecs.get_system_ids(),
+            systems: systems.get_system_ids(),
             next: AtomicUsize::new(0),
         }
     }

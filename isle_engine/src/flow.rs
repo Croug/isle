@@ -1,10 +1,9 @@
 use std::{
-    cell::UnsafeCell,
-    sync::atomic::{AtomicU32, Ordering},
+    cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
 };
 
 use isle_ecs::{
-    ecs::{IntoSystem, System, ECS},
+    ecs::{IntoSystem, System, SystemSet},
     entity::Entity,
     prelude::Component,
     world::World,
@@ -14,7 +13,7 @@ use crate::{executor::Executor, plugin::EngineHook, schedule::Scheduler};
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
-    ecs: UnsafeCell<ECS>,
+    system_sets: Vec<SystemSet>,
     scheduler: S,
     executor: E,
     hooks: Vec<Box<dyn EngineHook<S, E>>>,
@@ -31,9 +30,11 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         }
     }
 
-    fn run_schedule(&mut self) {
-        let schedule = self.scheduler.get_schedule(&self.world, &self.ecs);
-        self.executor.run(&self.ecs, &self.world, &schedule);
+    fn run_schedules(&mut self) {
+        for system_set in self.system_sets.iter_mut() {
+            let schedule = self.scheduler.get_schedule(&self.world, system_set);
+            self.executor.run(system_set, &self.world, &schedule);
+        }
     }
 
     pub fn run(&mut self) -> ! {
@@ -45,7 +46,7 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
                     &mut self.executor,
                 )
             });
-            self.run_schedule();
+            self.run_schedules();
             self.hooks.iter_mut().for_each(|hook| {
                 hook.post_run(
                     unsafe { &mut *self.world.get() },
@@ -97,21 +98,37 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         )
     }
 
-    pub fn add_resource<T: 'static>(&self, resource: T) {
-        let ecs = unsafe { &mut *self.ecs.get() };
+    pub fn add_resource<T: 'static>(&mut self, resource: T) {
         let world = unsafe { &mut *self.world.get() };
-        ecs.add_resource(resource, world);
+        self.current_set().add_resource(resource, world);
     }
 
-    pub fn add_component<T: Component + 'static>(&self, entity: Entity, component: T) {
-        let ecs = unsafe { &mut *self.ecs.get() };
+    pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T) {
         let world = unsafe { &mut *self.world.get() };
-        ecs.add_component(entity, component, world);
+        self.current_set().add_component(entity, component, world);
     }
 
-    pub fn add_system<I, T: System + 'static>(&self, system: impl IntoSystem<I, System = T>) {
-        let ecs = unsafe { &mut *self.ecs.get() };
-        ecs.add_system(system);
+    pub fn add_prefix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+        self.system_sets[0].add_system(system);
+    }
+
+    pub fn add_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+        self.current_set().add_system(system);
+    }
+
+    pub fn add_postfix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+        self.system_sets.last_mut().unwrap().add_system(system);
+    }
+
+    pub fn barrier(&mut self) {
+        let index = self.system_sets.len() - 1;
+        self.system_sets.insert(index, SystemSet::new());
+        println!("{:?}", self.system_sets);
+    }
+
+    fn current_set(&mut self) -> &mut SystemSet {
+        let index = self.system_sets.len() - 2;
+        self.system_sets.get_mut(index).unwrap()
     }
 }
 
@@ -142,7 +159,7 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
         if let (Some(scheduler), Some(executor)) = (self.scheduler, self.executor) {
             Flow {
                 world: UnsafeCell::new(World::new()),
-                ecs: UnsafeCell::new(ECS::new()),
+                system_sets: (0..3).map(|_| SystemSet::new()).collect(),
                 scheduler,
                 executor,
                 generation: AtomicU32::new(0),
