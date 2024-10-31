@@ -18,6 +18,8 @@ pub struct Camera {
     pub(crate) bind_group: wgpu::BindGroup,
     pub(crate) viewport: Vec2,
     pub(crate) position: Vec3,
+    pub(crate) znear: f32,
+    pub(crate) zfar: f32,
     pub(crate) projection: CameraProjection,
     pub(crate) view_mat: Mat4,
     pub(crate) projection_mat: Mat4,
@@ -37,16 +39,12 @@ struct CameraUniform {
 pub enum CameraProjection {
     Perspective {
         fovy: f32,
-        znear: f32,
-        zfar: f32,
     },
     Orthographic {
         left: f32,
         right: f32,
         bottom: f32,
         top: f32,
-        znear: f32,
-        zfar: f32,
     },
     None,
 }
@@ -58,6 +56,8 @@ pub struct CameraCreationSettings {
     pub position: Vec3,
     pub orientation: Rotation,
     pub scale: Vec3,
+    pub znear: f32,
+    pub zfar: f32,
     pub projection: CameraProjection,
 }
 
@@ -71,10 +71,10 @@ impl Default for CameraCreationSettings {
             position,
             orientation: Quaternion::look_at(&position, &Vec3::ZERO).into(),
             scale: Vec3::IDENTITY,
+            znear: 10.0,
+            zfar: 100000.0,
             projection: CameraProjection::Perspective {
                 fovy: 60.0,
-                znear: 10.0,
-                zfar: 100000.0,
             },
         }
     }
@@ -88,11 +88,11 @@ impl Camera {
 
         let view = Mat4::inverse_transform(settings.scale, &settings.orientation, settings.position);
         let projection_mat = match settings.projection {
-            CameraProjection::Perspective { fovy, znear, zfar } =>
-                Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), znear, zfar),
+            CameraProjection::Perspective { fovy } =>
+                Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), settings.znear, settings.zfar),
 
-            CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
-                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
+            CameraProjection::Orthographic { left, right, bottom, top } =>
+                Mat4::orthographic_projection(left, right, bottom, top, settings.znear, settings.zfar),
 
             CameraProjection::None => Mat4::identity(),
         };
@@ -134,6 +134,8 @@ impl Camera {
             bind_group,
             depth_texture,
             view_mat: view,
+            znear: settings.znear,
+            zfar: settings.zfar,
             projection_mat,
             position: settings.position,
 
@@ -217,12 +219,12 @@ impl Camera {
         self.dirty.store(true, Ordering::SeqCst);
     }
 
-    pub fn update_projection(&mut self, projection: CameraProjection) {
+    pub fn update_projection(&mut self, znear: f32, zfar: f32, projection: CameraProjection) {
         self.projection_mat = match projection {
-            CameraProjection::Perspective { fovy, znear, zfar } =>
+            CameraProjection::Perspective { fovy} =>
                 Mat4::perspective_projection(self.viewport.0 / self.viewport.1, Angle::Degrees(fovy), znear, zfar),
 
-            CameraProjection::Orthographic { left, right, bottom, top, znear, zfar } =>
+            CameraProjection::Orthographic { left, right, bottom, top } =>
                 Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
 
             CameraProjection::None => Mat4::identity(),
