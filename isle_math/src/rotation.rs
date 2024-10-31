@@ -285,6 +285,17 @@ impl From<Vec3> for Rotation {
     }
 }
 
+impl Mul for Rotation {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let a = self.to_quat();
+        let b = rhs.to_quat();
+
+        (a * b).into()
+    }
+}
+
 impl Mul<Vec3> for Rotation {
     type Output = Vec3;
 
