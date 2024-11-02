@@ -11,3 +11,8 @@ log = "0.4.22"
 rustc-hash = "2.0.0"
 tobj = "4.0.2"
 wgpu = "22.1.0"
+isle_engine = { path = "../isle_engine", optional = true}
+isle_ecs ={ path = "../isle_ecs", optional = true}
+
+[features]
+isle = ["dep:isle_engine","dep:isle_ecs"]

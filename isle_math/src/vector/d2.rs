@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::matrix::Matrix;
 
@@ -60,6 +60,18 @@ impl Div<f32> for &Vec2 {
     }
 }
 
+impl DivAssign for Vec2 {
+    fn div_assign(&mut self, rhs: Self) {
+        *self = *self / rhs;
+    }
+}
+
+impl DivAssign<f32> for Vec2 {
+    fn div_assign(&mut self, rhs: f32) {
+        *self = *self / rhs;
+    }
+}
+
 impl Mul for Vec2 {
     type Output = Self;
 
@@ -89,6 +101,18 @@ impl Mul<f32> for &Vec2 {
 
     fn mul(self, rhs: f32) -> Self::Output {
         (*self).mul(rhs)
+    }
+}
+
+impl MulAssign for Vec2 {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
+    }
+}
+
+impl MulAssign<f32> for Vec2 {
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = *self * rhs;
     }
 }
 
@@ -124,6 +148,18 @@ impl Add<f32> for &Vec2 {
     }
 }
 
+impl AddAssign for Vec2 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl AddAssign<f32> for Vec2 {
+    fn add_assign(&mut self, rhs: f32) {
+        *self = *self + rhs;
+    }
+}
+
 impl Sub for Vec2 {
     type Output = Self;
 
@@ -153,6 +189,12 @@ impl Sub<f32> for &Vec2 {
 
     fn sub(self, rhs: f32) -> Self::Output {
         (*self).sub(rhs)
+    }
+}
+
+impl SubAssign for Vec2 {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 
