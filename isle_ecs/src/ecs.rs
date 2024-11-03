@@ -1,5 +1,5 @@
 use std::{
-    any::{type_name, TypeId},
+    any::{type_name, Any, TypeId},
     cell::UnsafeCell,
     collections::HashSet,
     marker::PhantomData,
@@ -57,19 +57,8 @@ impl SystemSet {
             systems: Vec::new(),
         }
     }
-    pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>) {
-        self.systems.push(Box::new(system.into_system()));
-    }
-    pub fn add_component<T: Component + 'static>(
-        &mut self,
-        entity: Entity,
-        component: T,
-        world: &mut World,
-    ) {
-        world.store_component(entity, component);
-    }
-    pub fn add_resource<T: 'static>(&mut self, resource: T, world: &mut World) {
-        world.store_resource(resource);
+    pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>, world: &UnsafeCell<World>) {
+        self.systems.push(Box::new(system.into_system(world)));
     }
     pub fn get_system_ids(&self) -> Vec<usize> {
         self.systems.iter().enumerate().map(|(i, _)| i).collect()
@@ -102,13 +91,15 @@ impl TypeSet for HashSet<BorrowSignature> {
 pub trait IntoSystem<Input> {
     type System: System;
 
-    fn into_system(self) -> Self::System;
+    fn into_system(self, world: &UnsafeCell<World>) -> Self::System;
 }
 
 pub trait SystemParam {
+    type State;
     type Item<'new>;
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w>;
+    fn init_state(world: &UnsafeCell<World>) -> Self::State;
+    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &mut Self::State) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
 }
 
@@ -123,9 +114,12 @@ impl<'a, T> Deref for Res<'a, T> {
 }
 
 impl<'a, T> SystemParam for Res<'a, T> {
+    type State = ();
     type Item<'new> = Res<'new, T>;
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State) -> Self::Item<'w> {
         let world = unsafe { &*world.get() };
         Res(world.get_resource::<T>().unwrap())
     }
@@ -152,9 +146,12 @@ impl<'a, T> DerefMut for ResMut<'a, T> {
 }
 
 impl<'a, T: 'static> SystemParam for ResMut<'a, T> {
+    type State = ();
     type Item<'new> = ResMut<'new, T>;
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State) -> Self::Item<'w> {
         let world = unsafe { &mut *world.get() };
         ResMut(unsafe { world.get_resource_mut::<T>().unwrap() })
     }
@@ -164,8 +161,9 @@ impl<'a, T: 'static> SystemParam for ResMut<'a, T> {
     }
 }
 
-pub struct StoredSystem<Input, F> {
+pub struct StoredSystem<Input, State, F> {
     f: F,
+    s: State,
     marker: PhantomData<fn() -> Input>,
 }
 
@@ -181,11 +179,17 @@ macro_rules! impl_system_param {
             for<'a> $params: SystemParam<Item<'a>=$params>
         ),+)?
         {
+            type State = ($($($params::State,)+)?);
             type Item<'new> = ($($($params::Item<'new>),+)?);
 
-            fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+            fn init_state(world: &UnsafeCell<World>) -> Self::State {
+                ($($($params::init_state(world),)+)?)
+            }
+
+            fn from_world<'w>(world: &'w UnsafeCell<World>, state: &mut Self::State) -> Self::Item<'w> {
+                let ($($($params,)+)?) = state;
                 $($(
-                    let $params = $params::from_world(unsafe { &*world });
+                    let $params = $params::from_world(unsafe { &*world }, $params);
                 )+)?
 
                 ($($($params),+)?)
@@ -215,7 +219,7 @@ macro_rules! impl_system {
         $($params:ident),*
     ) => {
         #[allow(non_snake_case, unused)]
-        impl<F, $($params: SystemParam),*> System for StoredSystem<($($params,)*), F>
+        impl<F, $($params: SystemParam),*> System for StoredSystem<($($params,)*), ($($params::State,)*), F>
         where
             for<'a, 'b> &'a mut F:
                 FnMut( $($params),* ) +
@@ -229,8 +233,10 @@ macro_rules! impl_system {
                     f($($params),*);
                 }
 
+                let ($($params,)*) = &mut self.s;
+
                 $(
-                    let $params = $params::from_world(&world);
+                    let $params = $params::from_world(&world, $params);
                 )*
 
                 call_inner(&mut self.f, $($params),*);
@@ -259,13 +265,17 @@ macro_rules! impl_into_system {
                 FnMut( $($params),* ) +
                 FnMut( $(<$params as SystemParam>::Item<'b>),* )
         {
-            type System = StoredSystem<($($params,)*), Self>;
+            type System = StoredSystem<($($params,)*), ($($params::State,)*), Self>;
 
-            fn into_system(self) -> Self::System {
+            fn into_system(self, world: &UnsafeCell<World>) -> Self::System {
                 let mut _set = HashSet::<BorrowSignature>::new();
                 $($params::collect_types(&mut _set);)*
+
+                let state = ($($params::init_state(world),)*);
+
                 StoredSystem {
                     f: self,
+                    s: state,
                     marker: Default::default(),
                 }
             }

@@ -74,8 +74,10 @@ where
     T: QueryParam + 'static,
     V: ReadOnlyQueryParam + 'static,
 {
+    type State = ();
     type Item<'new> = Query<'new, T, V>;
-    fn from_world<'w>(world: &'w UnsafeCell<World>) -> Self::Item<'w> {
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State) -> Self::Item<'w> {
         Query::<T, V> {
             world: &world,
             marker: PhantomData::<(T, V)>,

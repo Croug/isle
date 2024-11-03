@@ -1,5 +1,5 @@
 use std::{
-    cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
+    any::Any, cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
 };
 
 use isle_ecs::{
@@ -100,35 +100,34 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
 
     pub fn add_resource<T: 'static>(&mut self, resource: T) {
         let world = unsafe { &mut *self.world.get() };
-        self.current_set().add_resource(resource, world);
+        world.store_resource(resource);
     }
 
     pub fn add_component<T: Component + 'static>(&mut self, entity: Entity, component: T) {
         let world = unsafe { &mut *self.world.get() };
-        self.current_set().add_component(entity, component, world);
+        world.store_component(entity, component);
     }
 
     pub fn add_prefix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
-        self.system_sets[0].add_system(system);
+        self.system_sets[0].add_system(system, &self.world);
     }
 
     pub fn add_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
-        self.current_set().add_system(system);
+        let current_set = self.current_set();
+        self.system_sets[current_set].add_system(system, &self.world);
     }
 
     pub fn add_postfix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
-        self.system_sets.last_mut().unwrap().add_system(system);
+        self.system_sets.last_mut().unwrap().add_system(system, &self.world);
     }
 
     pub fn barrier(&mut self) {
         let index = self.system_sets.len() - 1;
         self.system_sets.insert(index, SystemSet::new());
-        println!("{:?}", self.system_sets);
     }
 
-    fn current_set(&mut self) -> &mut SystemSet {
-        let index = self.system_sets.len() - 2;
-        self.system_sets.get_mut(index).unwrap()
+    fn current_set(&self) -> usize {
+        self.system_sets.len() - 2
     }
 }
 
