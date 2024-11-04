@@ -2,9 +2,9 @@ use std::{iter, sync::{Arc, Mutex, OnceLock}};
 
 type NodeReference<T> = Arc<OnceLock<EventNode<T>>>;
 
-pub trait EventArgs: Clone {}
+pub trait EventArgs: Clone + std::fmt::Debug {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct EventNode<T: EventArgs> {
     event: T,
     next: NodeReference<T>
@@ -49,12 +49,8 @@ impl<T: EventArgs> EventWriter<T> {
 
     pub fn send(&mut self, event: T) {
         let mut last = self.last.lock().unwrap();
-        let _ = if let Some(last_evt) = last.get() {
-            *last = last_evt.push(event.clone());
-            Ok(())
-        } else {
-            last.set(EventNode::new(event.clone()))
-        };
+        last.set(EventNode::new(event)).expect("Last node in invalid state");
+        *last = last.get().unwrap().next.clone();
     }
 
     fn last(&self) -> NodeReference<T> {
@@ -88,5 +84,63 @@ impl<T: EventArgs> EventReader<T> {
                 node.event
             })
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::thread;
+
+    use super::*;
+
+    #[derive(Clone, Debug)]
+    struct Event(usize);
+
+    impl EventArgs for Event {}
+
+    fn make_channel() -> (EventWriter<Event>, EventReader<Event>) {
+        let mut writer = EventWriter::<Event>::new();
+        let reader = EventReader::from_writer(&writer);
+
+        (0..5).map(Event).for_each(|event| writer.send(event));
+
+        (writer, reader)
+    }
+
+    #[test]
+    fn test_write_read() {
+        let (writer, mut reader) = make_channel();
+
+        let head_ref = Arc::downgrade(&reader.head);
+
+        let events: Vec<_> = reader.iter().map(|Event(i)| i).collect();
+        let comp: Vec<usize> = (0..5).collect();
+
+        assert_eq!(events, comp);
+        assert!(Arc::ptr_eq(&writer.last(), &reader.head));
+        assert!(head_ref.upgrade().is_none());
+        assert!(reader.head.get().is_none());
+    }
+
+    #[test]
+    fn test_mt_read() {
+        let (writer, mut reader) = make_channel();
+        let head_ref = Arc::downgrade(&reader.head);
+
+        let mut reader_clone = reader.clone();
+        let writer_clone = writer.clone();
+
+        let thread = thread::spawn(move || {
+            reader_clone.iter().for_each(|_| {});
+            assert!(Arc::ptr_eq(&writer_clone.last(), &reader_clone.head));
+        });
+
+        let head_deref = head_ref.upgrade().unwrap();
+        assert!(Arc::ptr_eq(&reader.head, &head_deref));
+        let Event(i) = reader.read().unwrap();
+        assert_eq!(i, 0);
+        drop(head_deref);
+        thread.join().unwrap();
+        assert!(head_ref.upgrade().is_none());
     }
 }
