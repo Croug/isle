@@ -99,7 +99,7 @@ pub trait SystemParam {
     type Item<'new>;
 
     fn init_state(world: &UnsafeCell<World>) -> Self::State;
-    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &mut Self::State) -> Self::Item<'w>;
+    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &'w mut Self::State) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
 }
 
