@@ -1,4 +1,7 @@
+use std::time::{Instant, UNIX_EPOCH};
+
 use isle::prelude::*;
+use isle_engine::{event::EventArgs, params::{Event, EventTrigger}};
 
 struct MyResource(pub usize);
 
@@ -40,7 +43,10 @@ fn main() {
 
     flow.barrier();
 
-    // flow.run();
+    flow.add_system(my_event_signal);
+    flow.add_system(my_event_system);
+
+    flow.run();
 }
 
 fn my_counting_system(mut res: ResMut<MyResource>) {
@@ -81,4 +87,21 @@ fn my_other_query_system(query: Query<Entity, With<MyComponentTwo>>) {
     for entity in query.iter() {
         println!("<other_query_system> Entity: {entity:?}");
     }
+}
+
+#[derive(Debug, Clone)]
+struct MyEvent(usize);
+
+impl EventArgs for MyEvent {}
+
+fn my_event_system(mut events: Event<MyEvent>) {
+    for event in events.iter() {
+        println!("<event_system> Event: {event:?}");
+    }
+}
+
+fn my_event_signal(mut event: EventTrigger<MyEvent>) {
+    let now = UNIX_EPOCH.elapsed().unwrap().as_secs();
+    println!("Sending event: {now}");
+    event.send(MyEvent(now as usize));
 }
