@@ -78,12 +78,7 @@ impl<T: EventArgs> EventReader<T> {
     }
 
     pub fn iter(&mut self) -> impl Iterator<Item = T> + '_ {
-        iter::from_fn(move || {
-            self.head.get().cloned().map(|node| {
-                self.head = node.next.clone();
-                node.event
-            })
-        })
+        iter::from_fn(move || self.read())
     }
 }
 
