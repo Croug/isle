@@ -1,12 +1,12 @@
 use std::{
-    any::{type_name, Any, TypeId},
+    any::{type_name, TypeId},
     cell::UnsafeCell,
     collections::HashSet,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
 
-use crate::{component::Component, entity::Entity, world::World};
+use crate::world::World;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RefType {
@@ -267,6 +267,7 @@ macro_rules! impl_into_system {
         {
             type System = StoredSystem<($($params,)*), ($($params::State,)*), Self>;
 
+            #[allow(unused_variables)]
             fn into_system(self, world: &UnsafeCell<World>) -> Self::System {
                 let mut _set = HashSet::<BorrowSignature>::new();
                 $($params::collect_types(&mut _set);)*

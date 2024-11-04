@@ -1,5 +1,5 @@
 use std::{
-    any::Any, cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
+    cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
 };
 
 use isle_ecs::{
