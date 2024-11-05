@@ -247,6 +247,11 @@ impl InputMap {
             }
         });
 
-        axis.max(positive - negative)
+        let fallback = positive - negative;
+        if axis.abs() > fallback.abs() {
+            axis
+        } else {
+            fallback
+        }
     }
 }
