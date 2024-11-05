@@ -1,7 +1,7 @@
-use std::time::{Instant, UNIX_EPOCH};
+use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
 
 use isle::prelude::*;
-use isle_engine::{event::EventArgs, params::{Event, EventTrigger}};
+use isle_engine::{event::EventArgs, input::{Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 
 struct MyResource(pub usize);
 
@@ -36,21 +36,23 @@ fn main() {
 
     flow.add_postfix_system(my_counting_system);
 
-    flow.add_system(my_complete_system);
-    flow.add_system(my_resource_system);
-    flow.add_system(my_query_system);
-    flow.add_system(my_other_query_system);
+    // flow.add_system(my_complete_system);
+    // flow.add_system(my_resource_system);
+    // flow.add_system(my_query_system);
+    // flow.add_system(my_other_query_system);
 
-    flow.barrier();
+    // flow.barrier();
 
-    flow.add_system(my_event_signal);
-    flow.add_system(my_event_system);
+    // flow.add_system(my_event_signal);
+    // flow.add_system(my_event_system);
+
+    flow.add_system(my_input_system);
+    // flow.add_system(my_fake_input);
 
     flow.run();
 }
 
 fn my_counting_system(mut res: ResMut<MyResource>) {
-    println!("Res is {}", res.0);
     res.0 += 1;
 }
 
@@ -104,4 +106,64 @@ fn my_event_signal(mut event: EventTrigger<MyEvent>) {
     let now = UNIX_EPOCH.elapsed().unwrap().as_secs();
     println!("Sending event: {now}");
     event.send(MyEvent(now as usize));
+}
+
+struct MyMapping;
+
+impl Mapping for MyMapping {
+    fn keys<'a>() -> &'a [Key] {
+        &[Key::A, Key::B, Key::C]
+    }
+
+    fn buttons<'a>() -> &'a [Button] {
+        &[Button::North, Button::South]
+    }
+}
+
+struct MyAxisMapping;
+
+impl AxisMapping for MyAxisMapping {
+    fn axes<'a>() -> &'a [Axis] {
+        &[Axis::LeftStickX, Axis::RightStickX]
+    }
+    fn positive_keys<'a>() -> &'a [Key] {
+        &[Key::D, Key::Right]
+    }
+    fn positive_buttons<'a>() -> &'a [Button] {
+        &[Button::PadRight]
+    }
+    fn negative_keys<'a>() -> &'a [Key] {
+        &[Key::A, Key::Left]
+    }
+    fn negative_buttons<'a>() -> &'a [Button] {
+        &[Button::PadLeft]
+    }
+}
+
+fn my_input_system(input: Input<MyMapping>, input_axis: InputAxis<MyAxisMapping>) {
+    // if input.just_changed() {
+    //     println!("Edge detected!");
+    // }
+    // if input.state() {
+    //     println!("Input detected!");
+    // }
+    
+    println!("Axis value: {}", input_axis.value());
+}
+
+const STEP: f32 = PI / 32.;
+
+fn my_fake_input(mut input: ResMut<InputMap>, counter: Res<MyResource>) {
+    let MyResource(counter) = *counter;
+    match counter {
+        5 => input.set_key(Key::A, true),
+        6 => input.set_key(Key::B, true),
+        10 => input.set_key(Key::A, false),
+        12 => input.set_key(Key::B, false),
+        15 => input.set_button(Button::North, true),
+        20 => input.set_button(Button::North, false),
+        // 25 => panic!("Exiting"),
+        _ => ()
+    }
+    input.set_axis(Axis::LeftStickX, STEP * (counter as f32).sin());
 }
