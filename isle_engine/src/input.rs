@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-pub use isle_engine_macros::define_binding;
+pub use isle_engine_macros::{define_axis_binding, define_binding};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -247,13 +247,19 @@ impl InputMap {
         let positive: f32 = M::PositiveMapping::get(self).into();
         let negative: f32 = M::NegativeMapping::get(self).into();
 
-        let axis = M::axes().iter().map(|axis| self.get_axis(*axis)).fold(0.0_f32, |max, value| {
-            if value.abs() > max.abs() {
-                value
-            } else {
-                max
-            }
-        });
+        let axis = M::axes()
+            .iter()
+            .map(|axis| self.get_axis(*axis))
+            .fold(
+                0.0_f32,
+                |max, value| {
+                    if value.abs() > max.abs() {
+                        value
+                    } else {
+                        max
+                    }
+                },
+            );
 
         let fallback = positive - negative;
         if axis.abs() > fallback.abs() {

@@ -1,6 +1,10 @@
 use proc_macro::TokenStream;
-use syn::{parse::{Parse, ParseStream}, punctuated::Punctuated, BinOp, Expr, ExprBinary, Ident, Token};
 use quote::quote;
+use syn::{
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+    BinOp, Expr, ExprBinary, Ident, Token,
+};
 
 #[proc_macro]
 pub fn define_binding(input: TokenStream) -> TokenStream {
@@ -10,7 +14,7 @@ pub fn define_binding(input: TokenStream) -> TokenStream {
     let keys = &binding_input.keys;
     let buttons = &binding_input.buttons;
 
-    quote!{
+    quote! {
         pub struct #name;
 
         impl isle_engine::input::Mapping for #name {
@@ -22,7 +26,8 @@ pub fn define_binding(input: TokenStream) -> TokenStream {
                 &[#(isle_engine::input::#buttons),*]
             }
         }
-    }.into()
+    }
+    .into()
 }
 
 struct KeyButtonBinding {
@@ -57,27 +62,98 @@ impl Parse for KeyButtonBinding {
     }
 }
 
+#[proc_macro]
+pub fn define_axis_binding(input: TokenStream) -> TokenStream {
+    let binding_input = syn::parse_macro_input!(input as AxisBinding);
+
+    let name = &binding_input.struct_name;
+    let axes = &binding_input.axes;
+    let positive_fallback = &binding_input.positive_fallback;
+    let negative_fallback = &binding_input.negative_fallback;
+
+    quote! {
+        pub struct #name;
+
+        impl isle_engine::input::AxisMapping for #name {
+            type PositiveMapping = #positive_fallback;
+            type NegativeMapping = #negative_fallback;
+
+            fn axes<'a>() -> &'a [isle_engine::input::Axis] {
+                &[#(isle_engine::input::#axes),*]
+            }
+        }
+    }
+    .into()
+}
+
+struct AxisBinding {
+    struct_name: Ident,
+    positive_fallback: Ident,
+    negative_fallback: Ident,
+    axes: Vec<Expr>,
+}
+
+impl Parse for AxisBinding {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let struct_name: Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+
+        let axes_expr: Expr = input.parse()?;
+        let mut axes = Vec::new();
+        collect_list(&axes_expr, &mut axes)?;
+        input.parse::<Token![,]>()?;
+
+        let positive_fallback: Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+
+        let negative_fallback: Ident = input.parse()?;
+
+        Ok(Self {
+            struct_name,
+            positive_fallback,
+            negative_fallback,
+            axes,
+        })
+    }
+}
+
 fn collect_list(expr: &Expr, mut list: &mut Vec<Expr>) -> syn::Result<()> {
     match expr {
-        Expr::Binary(ExprBinary{left, op, right, ..}) if matches!(op, BinOp::BitOr(_)) => {
+        Expr::Binary(ExprBinary {
+            left, op, right, ..
+        }) if matches!(op, BinOp::BitOr(_)) => {
             collect_list(left, &mut list)?;
             collect_list(right, &mut list)?;
-        },
-        Expr::Path(_) => { list.push(expr.clone()); },
-        _ => return Err(syn::Error::new_spanned(expr, "Expected path or binary expression")),
+        }
+        Expr::Path(_) => {
+            list.push(expr.clone());
+        }
+        _ => {
+            return Err(syn::Error::new_spanned(
+                expr,
+                "Expected path or binary expression",
+            ))
+        }
     }
 
     Ok(())
 }
 
-fn parse_single_binding(expr: &Expr, keys: &mut Vec<Expr>, buttons: &mut Vec<Expr>) -> syn::Result<()> {
+fn parse_single_binding(
+    expr: &Expr,
+    keys: &mut Vec<Expr>,
+    buttons: &mut Vec<Expr>,
+) -> syn::Result<()> {
     let path = if let Expr::Path(path) = expr {
         &path.path
     } else {
         return Err(syn::Error::new_spanned(expr, "Expected path"));
     };
 
-    let ty = path.segments.first().unwrap_or_else(|| panic!("Expected Key:: or Button::"));
+    let ty = path
+        .segments
+        .first()
+        .unwrap_or_else(|| panic!("Expected Key:: or Button::"));
 
     match ty.ident.to_string().as_str() {
         "Key" => keys.push(expr.clone()),
