@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
 
 use isle::prelude::*;
-use isle_engine::{event::EventArgs, input::{Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
+use isle_engine::{event::EventArgs, input::{define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 
 struct MyResource(pub usize);
 
@@ -49,7 +49,7 @@ fn main() {
     flow.add_system(my_input_system);
     // flow.add_system(my_fake_input);
 
-    flow.run();
+    // flow.run();
 }
 
 fn my_counting_system(mut res: ResMut<MyResource>) {
@@ -108,17 +108,19 @@ fn my_event_signal(mut event: EventTrigger<MyEvent>) {
     event.send(MyEvent(now as usize));
 }
 
-struct MyMapping;
+// struct MyMapping;
 
-impl Mapping for MyMapping {
-    fn keys<'a>() -> &'a [Key] {
-        &[Key::A, Key::B, Key::C]
-    }
+// impl Mapping for MyMapping {
+//     fn keys<'a>() -> &'a [Key] {
+//         &[Key::A, Key::B, Key::C]
+//     }
 
-    fn buttons<'a>() -> &'a [Button] {
-        &[Button::North, Button::South]
-    }
-}
+//     fn buttons<'a>() -> &'a [Button] {
+//         &[Button::North, Button::South]
+//     }
+// }
+
+define_binding!(MyMapping, Key::A | Key::B | Key::C | Button::North | Button::South);
 
 struct MyAxisMapping;
 
@@ -141,14 +143,14 @@ impl AxisMapping for MyAxisMapping {
 }
 
 fn my_input_system(input: Input<MyMapping>, input_axis: InputAxis<MyAxisMapping>) {
-    // if input.just_changed() {
-    //     println!("Edge detected!");
-    // }
-    // if input.state() {
-    //     println!("Input detected!");
-    // }
+    if input.just_changed() {
+        println!("Edge detected!");
+    }
+    if input.state() {
+        println!("Input detected!");
+    }
     
-    println!("Axis value: {}", input_axis.value());
+    // println!("Axis value: {}", input_axis.value());
 }
 
 const STEP: f32 = PI / 32.;

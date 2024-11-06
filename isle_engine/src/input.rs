@@ -2,6 +2,8 @@ use std::hash::Hash;
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
+pub use isle_engine_macros::define_binding;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
     // Letters
