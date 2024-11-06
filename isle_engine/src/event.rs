@@ -1,4 +1,7 @@
-use std::{iter, sync::{Arc, Mutex, OnceLock}};
+use std::{
+    iter,
+    sync::{Arc, Mutex, OnceLock},
+};
 
 type NodeReference<T> = Arc<OnceLock<EventNode<T>>>;
 
@@ -7,14 +10,14 @@ pub trait EventArgs: Clone + std::fmt::Debug {}
 #[derive(Clone, Debug)]
 struct EventNode<T: EventArgs> {
     event: T,
-    next: NodeReference<T>
+    next: NodeReference<T>,
 }
 
 impl<T: EventArgs> EventNode<T> {
     fn new(event: T) -> Self {
         Self {
             event,
-            next: Arc::new(OnceLock::new())
+            next: Arc::new(OnceLock::new()),
         }
     }
 
@@ -49,7 +52,8 @@ impl<T: EventArgs> EventWriter<T> {
 
     pub fn send(&mut self, event: T) {
         let mut last = self.last.lock().unwrap();
-        last.set(EventNode::new(event)).expect("Last node in invalid state");
+        last.set(EventNode::new(event))
+            .expect("Last node in invalid state");
         *last = last.get().unwrap().next.clone();
     }
 

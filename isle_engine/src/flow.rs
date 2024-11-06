@@ -1,5 +1,6 @@
 use std::{
-    cell::UnsafeCell, sync::atomic::{AtomicU32, Ordering}
+    cell::UnsafeCell,
+    sync::atomic::{AtomicU32, Ordering},
 };
 
 use isle_ecs::{
@@ -108,7 +109,10 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         world.store_component(entity, component);
     }
 
-    pub fn add_prefix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+    pub fn add_prefix_system<I, T: System + 'static>(
+        &mut self,
+        system: impl IntoSystem<I, System = T>,
+    ) {
         self.system_sets[0].add_system(system, &self.world);
     }
 
@@ -117,8 +121,14 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         self.system_sets[current_set].add_system(system, &self.world);
     }
 
-    pub fn add_postfix_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
-        self.system_sets.last_mut().unwrap().add_system(system, &self.world);
+    pub fn add_postfix_system<I, T: System + 'static>(
+        &mut self,
+        system: impl IntoSystem<I, System = T>,
+    ) {
+        self.system_sets
+            .last_mut()
+            .unwrap()
+            .add_system(system, &self.world);
     }
 
     pub fn barrier(&mut self) {

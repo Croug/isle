@@ -1,8 +1,14 @@
 use std::ops::Deref;
 
-use isle_ecs::{ecs::{RefType, SystemParam}, world};
+use isle_ecs::{
+    ecs::{RefType, SystemParam},
+    world,
+};
 
-use crate::{event::{EventArgs, EventReader, EventWriter}, input::{AxisMapping, InputMap, Mapping}};
+use crate::{
+    event::{EventArgs, EventReader, EventWriter},
+    input::{AxisMapping, InputMap, Mapping},
+};
 
 pub struct Event<'a, T: EventArgs> {
     reader: &'a mut EventReader<T>,
@@ -12,7 +18,7 @@ impl<T: EventArgs> Event<'_, T> {
     pub fn read(&mut self) -> Option<T> {
         self.reader.read()
     }
-    
+
     pub fn iter(&mut self) -> impl Iterator<Item = T> + '_ {
         self.reader.iter()
     }
@@ -24,19 +30,22 @@ impl<'a, T: EventArgs + 'static> SystemParam for Event<'a, T> {
     fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
         types.insert_type::<T>(RefType::Immutable);
     }
-    fn from_world<'w>(_: &'w std::cell::UnsafeCell<isle_ecs::world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
-        Event {
-            reader: state,
-        }
+    fn from_world<'w>(
+        _: &'w std::cell::UnsafeCell<isle_ecs::world::World>,
+        state: &'w mut Self::State,
+    ) -> Self::Item<'w> {
+        Event { reader: state }
     }
     fn init_state(world: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
         let world_ref = unsafe { &*world.get() };
-        let writer = world_ref.get_resource::<EventWriter<T>>().unwrap_or_else(|| {
-            let world = unsafe { &mut *world.get() };
-            let writer = EventWriter::<T>::new();
-            world.store_resource(writer);
-            world.get_resource().unwrap()
-        });
+        let writer = world_ref
+            .get_resource::<EventWriter<T>>()
+            .unwrap_or_else(|| {
+                let world = unsafe { &mut *world.get() };
+                let writer = EventWriter::<T>::new();
+                world.store_resource(writer);
+                world.get_resource().unwrap()
+            });
 
         EventReader::from_writer(writer)
     }
@@ -58,20 +67,23 @@ impl<'a, T: EventArgs + 'static> SystemParam for EventTrigger<'a, T> {
 
     fn init_state(world: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
         let world_ref = unsafe { &*world.get() };
-        let writer = world_ref.get_resource::<EventWriter<T>>().unwrap_or_else(|| {
-            let world = unsafe { &mut *world.get() };
-            let writer = EventWriter::<T>::new();
-            world.store_resource(writer);
-            world.get_resource().unwrap()
-        });
+        let writer = world_ref
+            .get_resource::<EventWriter<T>>()
+            .unwrap_or_else(|| {
+                let world = unsafe { &mut *world.get() };
+                let writer = EventWriter::<T>::new();
+                world.store_resource(writer);
+                world.get_resource().unwrap()
+            });
 
         writer.clone()
     }
 
-    fn from_world<'w>(_: &'w std::cell::UnsafeCell<isle_ecs::world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
-        EventTrigger {
-            writer: state,
-        }
+    fn from_world<'w>(
+        _: &'w std::cell::UnsafeCell<isle_ecs::world::World>,
+        state: &'w mut Self::State,
+    ) -> Self::Item<'w> {
+        EventTrigger { writer: state }
     }
 
     fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
@@ -131,7 +143,10 @@ impl<T: Mapping + 'static> SystemParam for Input<T> {
         types.insert_type::<T>(RefType::Immutable);
     }
 
-    fn from_world<'w>(world: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w std::cell::UnsafeCell<world::World>,
+        state: &'w mut Self::State,
+    ) -> Self::Item<'w> {
         let input_map = unsafe { &*world.get() }.get_resource::<InputMap>().unwrap();
         let input_state = T::get(input_map);
         let just_changed = input_state != state.last_state;
@@ -169,8 +184,11 @@ impl<T: AxisMapping + 'static> SystemParam for InputAxis<T> {
             world.get_resource().unwrap()
         });
     }
-    
-    fn from_world<'w>(world: &'w std::cell::UnsafeCell<world::World>, _: &'w mut Self::State) -> Self::Item<'w> {
+
+    fn from_world<'w>(
+        world: &'w std::cell::UnsafeCell<world::World>,
+        _: &'w mut Self::State,
+    ) -> Self::Item<'w> {
         let input_map = unsafe { &*world.get() }.get_resource::<InputMap>().unwrap();
         let value = T::get(input_map);
 
