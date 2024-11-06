@@ -167,12 +167,25 @@ pub trait Mapping: Sized {
     }
 }
 
+impl Mapping for () {
+    fn keys<'a>() -> &'a [Key] {
+        &[]
+    }
+
+    fn buttons<'a>() -> &'a [Button] {
+        &[]
+    }
+
+    fn get(input_map: &InputMap) -> bool {
+        false
+    }
+}
+
 pub trait AxisMapping: Sized {
+    type PositiveMapping: Mapping;
+    type NegativeMapping: Mapping;
+
     fn axes<'a>() -> &'a [Axis];
-    fn positive_keys<'a>() -> &'a [Key];
-    fn positive_buttons<'a>() -> &'a [Button];
-    fn negative_keys<'a>() -> &'a [Key];
-    fn negative_buttons<'a>() -> &'a [Button];
 
     fn get(input_map: &InputMap) -> f32 {
         input_map.check_axis_mapping::<Self>()
@@ -231,15 +244,8 @@ impl InputMap {
     }
 
     pub fn check_axis_mapping<M: AxisMapping>(&self) -> f32 {
-        let positive_keys = FxHashSet::from_iter(M::positive_keys().iter().copied());
-        let positive_buttons = FxHashSet::from_iter(M::positive_buttons().iter().copied());
-        let negative_keys = FxHashSet::from_iter(M::negative_keys().iter().copied());
-        let negative_buttons = FxHashSet::from_iter(M::negative_buttons().iter().copied());
-
-        let positive = !self.keys.is_disjoint(&positive_keys) || !self.buttons.is_disjoint(&positive_buttons);
-        let negative = !self.keys.is_disjoint(&negative_keys) || !self.buttons.is_disjoint(&negative_buttons);
-        let positive: f32 = positive.into();
-        let negative: f32 = negative.into();
+        let positive: f32 = M::PositiveMapping::get(self).into();
+        let negative: f32 = M::NegativeMapping::get(self).into();
 
         let axis = M::axes().iter().map(|axis| self.get_axis(*axis)).fold(0.0_f32, |max, value| {
             if value.abs() > max.abs() {
