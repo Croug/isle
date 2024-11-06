@@ -21,21 +21,21 @@ impl<T: EventArgs> EventNode<T> {
         }
     }
 
-    pub fn push(&self, event: T) -> NodeReference<T> {
-        let result = if let Some(next) = self.next.get() {
-            Ok(next.push(event.clone()))
-        } else {
-            self.next
-                .set(Self::new(event.clone()))
-                .map(|_| self.next.clone())
-        };
+    // pub fn push(&self, event: T) -> NodeReference<T> {
+    //     let result = if let Some(next) = self.next.get() {
+    //         Ok(next.push(event.clone()))
+    //     } else {
+    //         self.next
+    //             .set(Self::new(event.clone()))
+    //             .map(|_| self.next.clone())
+    //     };
 
-        if let Ok(node) = result {
-            node
-        } else {
-            self.push(event)
-        }
-    }
+    //     if let Ok(node) = result {
+    //         node
+    //     } else {
+    //         self.push(event)
+    //     }
+    // }
 }
 
 #[derive(Clone)]

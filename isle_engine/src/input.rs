@@ -176,7 +176,7 @@ impl Mapping for () {
         &[]
     }
 
-    fn get(input_map: &InputMap) -> bool {
+    fn get(_: &InputMap) -> bool {
         false
     }
 }

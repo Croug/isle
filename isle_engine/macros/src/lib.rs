@@ -2,7 +2,6 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    punctuated::Punctuated,
     BinOp, Expr, ExprBinary, Ident, Token,
 };
 
