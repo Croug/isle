@@ -1,7 +1,7 @@
 use std::{
     cell::UnsafeCell,
     fmt::Debug,
-    sync::{atomic::{AtomicU32, Ordering}, OnceLock},
+    sync::atomic::{AtomicU32, Ordering},
 };
 
 use isle_ecs::{
@@ -10,7 +10,7 @@ use isle_ecs::{
     prelude::Component,
     world::World,
 };
-use winit::{error::EventLoopError, event_loop::{self, EventLoop}, window::Window};
+use winit::{error::EventLoopError, event_loop::{self, EventLoop}};
 
 use crate::{event::{EventReader, EventWriter}, executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
 

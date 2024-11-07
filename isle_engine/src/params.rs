@@ -223,7 +223,7 @@ impl SystemParam for Tick {
     fn init_state(_: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
         Instant::now()
     }
-    fn from_world<'w>(world: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(_: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
         let delta = state.elapsed().as_secs_f32();
         *state = Instant::now();
 
