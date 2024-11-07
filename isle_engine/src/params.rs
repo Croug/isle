@@ -1,4 +1,7 @@
-use std::ops::Deref;
+use std::{
+    fmt::Debug,
+    ops::Deref,
+};
 
 use isle_ecs::{
     ecs::{RefType, SystemParam},
@@ -6,15 +9,15 @@ use isle_ecs::{
 };
 
 use crate::{
-    event::{EventArgs, EventReader, EventWriter},
+    event::{EventReader, EventWriter},
     input::{AxisMapping, InputMap, Mapping},
 };
 
-pub struct Event<'a, T: EventArgs> {
+pub struct Event<'a, T: Clone + Debug + 'static> {
     reader: &'a mut EventReader<T>,
 }
 
-impl<T: EventArgs> Event<'_, T> {
+impl<T: Clone + Debug + 'static> Event<'_, T> {
     pub fn read(&mut self) -> Option<T> {
         self.reader.read()
     }
@@ -24,7 +27,7 @@ impl<T: EventArgs> Event<'_, T> {
     }
 }
 
-impl<'a, T: EventArgs + 'static> SystemParam for Event<'a, T> {
+impl<'a, T: Clone + Debug + 'static> SystemParam for Event<'a, T> {
     type State = EventReader<T>;
     type Item<'new> = Event<'new, T>;
     fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
@@ -51,17 +54,17 @@ impl<'a, T: EventArgs + 'static> SystemParam for Event<'a, T> {
     }
 }
 
-pub struct EventTrigger<'a, T: EventArgs> {
+pub struct EventTrigger<'a, T: Clone + Debug + 'static> {
     writer: &'a mut EventWriter<T>,
 }
 
-impl<T: EventArgs> EventTrigger<'_, T> {
+impl<T: Clone + Debug + 'static> EventTrigger<'_, T> {
     pub fn send(&mut self, event: T) {
         self.writer.send(event);
     }
 }
 
-impl<'a, T: EventArgs + 'static> SystemParam for EventTrigger<'a, T> {
+impl<'a, T: Clone + Debug + 'static> SystemParam for EventTrigger<'a, T> {
     type State = EventWriter<T>;
     type Item<'new> = EventTrigger<'new, T>;
 

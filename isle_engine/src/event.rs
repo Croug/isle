@@ -1,19 +1,16 @@
 use std::{
-    iter,
-    sync::{Arc, Mutex, OnceLock},
+    fmt::Debug, iter, sync::{Arc, Mutex, OnceLock}
 };
 
 type NodeReference<T> = Arc<OnceLock<EventNode<T>>>;
 
-pub trait EventArgs: Clone + std::fmt::Debug {}
-
 #[derive(Clone, Debug)]
-struct EventNode<T: EventArgs> {
+struct EventNode<T: Clone + Debug + 'static> {
     event: T,
     next: NodeReference<T>,
 }
 
-impl<T: EventArgs> EventNode<T> {
+impl<T: Clone + Debug + 'static> EventNode<T> {
     fn new(event: T) -> Self {
         Self {
             event,
@@ -39,11 +36,11 @@ impl<T: EventArgs> EventNode<T> {
 }
 
 #[derive(Clone)]
-pub struct EventWriter<T: EventArgs> {
+pub struct EventWriter<T: Clone + Debug + 'static> {
     last: Arc<Mutex<NodeReference<T>>>,
 }
 
-impl<T: EventArgs> EventWriter<T> {
+impl<T: Clone + Debug + 'static> EventWriter<T> {
     pub fn new() -> Self {
         Self {
             last: Default::default(),
@@ -63,11 +60,11 @@ impl<T: EventArgs> EventWriter<T> {
 }
 
 #[derive(Clone)]
-pub struct EventReader<T: EventArgs> {
+pub struct EventReader<T: Clone + Debug + 'static> {
     head: NodeReference<T>,
 }
 
-impl<T: EventArgs> EventReader<T> {
+impl<T: Clone + Debug + 'static> EventReader<T> {
     pub fn from_writer(writer: &EventWriter<T>) -> Self {
         Self {
             head: writer.last().clone(),
@@ -94,8 +91,6 @@ mod test {
 
     #[derive(Clone, Debug)]
     struct Event(usize);
-
-    impl EventArgs for Event {}
 
     fn make_channel() -> (EventWriter<Event>, EventReader<Event>) {
         let mut writer = EventWriter::<Event>::new();

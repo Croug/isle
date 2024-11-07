@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
 
 use isle::prelude::*;
-use isle_engine::{event::EventArgs, input::{define_binding, define_axis_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
+use isle_engine::{input::{define_binding, define_axis_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 
 struct MyResource(pub usize);
 
@@ -91,10 +91,8 @@ fn my_other_query_system(query: Query<Entity, With<MyComponentTwo>>) {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct MyEvent(usize);
-
-impl EventArgs for MyEvent {}
 
 fn my_event_system(mut events: Event<MyEvent>) {
     for event in events.iter() {

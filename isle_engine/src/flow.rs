@@ -1,5 +1,6 @@
 use std::{
     cell::UnsafeCell,
+    fmt::Debug,
     sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -10,7 +11,7 @@ use isle_ecs::{
     world::World,
 };
 
-use crate::{executor::Executor, plugin::EngineHook, schedule::Scheduler};
+use crate::{event::EventWriter, executor::Executor, plugin::EngineHook, schedule::Scheduler};
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
@@ -38,45 +39,62 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         }
     }
 
+    pub fn spin(&mut self) {
+        self.hooks.iter_mut().for_each(|hook| {
+            hook.pre_run(
+                unsafe { &mut *self.world.get() },
+                &mut self.scheduler,
+                &mut self.executor,
+            )
+        });
+        self.run_schedules();
+        self.hooks.iter_mut().for_each(|hook| {
+            hook.post_run(
+                unsafe { &mut *self.world.get() },
+                &mut self.scheduler,
+                &mut self.executor,
+            )
+        });
+        self.hooks.iter_mut().for_each(|hook| {
+            hook.pre_render(
+                unsafe { &mut *self.world.get() },
+                &mut self.scheduler,
+                &mut self.executor,
+            )
+        });
+        self.hooks.iter_mut().for_each(|hook| {
+            hook.render(
+                unsafe { &mut *self.world.get() },
+                &mut self.scheduler,
+                &mut self.executor,
+            )
+        });
+        self.hooks.iter_mut().for_each(|hook| {
+            hook.post_render(
+                unsafe { &mut *self.world.get() },
+                &mut self.scheduler,
+                &mut self.executor,
+            )
+        });
+    }
+
     pub fn run(&mut self) -> ! {
         loop {
-            self.hooks.iter_mut().for_each(|hook| {
-                hook.pre_run(
-                    unsafe { &mut *self.world.get() },
-                    &mut self.scheduler,
-                    &mut self.executor,
-                )
-            });
-            self.run_schedules();
-            self.hooks.iter_mut().for_each(|hook| {
-                hook.post_run(
-                    unsafe { &mut *self.world.get() },
-                    &mut self.scheduler,
-                    &mut self.executor,
-                )
-            });
-            self.hooks.iter_mut().for_each(|hook| {
-                hook.pre_render(
-                    unsafe { &mut *self.world.get() },
-                    &mut self.scheduler,
-                    &mut self.executor,
-                )
-            });
-            self.hooks.iter_mut().for_each(|hook| {
-                hook.render(
-                    unsafe { &mut *self.world.get() },
-                    &mut self.scheduler,
-                    &mut self.executor,
-                )
-            });
-            self.hooks.iter_mut().for_each(|hook| {
-                hook.post_render(
-                    unsafe { &mut *self.world.get() },
-                    &mut self.scheduler,
-                    &mut self.executor,
-                )
-            });
+            self.spin();
         }
+    }
+
+    pub fn send_event<T: Clone + Debug + 'static>(&mut self, event: T) {
+        let world = unsafe { &*self.world.get() };
+        let writer = world
+            .get_resource::<EventWriter<T>>()
+            .unwrap_or_else(|| {
+                let world = unsafe { &mut *self.world.get() };
+                let writer = EventWriter::<T>::new();
+                world.store_resource(writer);
+                world.get_resource().unwrap()
+            });
+        writer.clone().send(event);
     }
 
     pub fn get_scheduler(&mut self) -> &mut S {
