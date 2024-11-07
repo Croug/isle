@@ -3,7 +3,13 @@ use std::{
     collections::HashSet, sync::mpsc::{Receiver, Sender},
 };
 
+type EntityEvents = EventWriter<EntityEvent>;
+
+pub mod event;
+
+use event::EntityEvent;
 use hashbrown::HashMap;
+use isle_event::EventWriter;
 
 use crate::{component::Component, entity::Entity};
 
@@ -20,13 +26,17 @@ pub struct World {
 impl World {
     pub fn new() -> Self {
         let (command_sender, command_receiver) = std::sync::mpsc::channel();
-        Self {
+        let mut world = Self {
             components: HashMap::new(),
             resources: HashMap::new(),
             entities: HashMap::new(),
             command_sender,
             command_receiver,
-        }
+        };
+
+        world.store_resource(EntityEvents::new());
+
+        world
     }
 
     pub fn command_sender(&self) -> &Sender<Command> {
@@ -54,15 +64,21 @@ impl World {
     }
 
     pub fn store_component<T: Component>(&mut self, entity: Entity, component: T) {
+        let mut events = self.get_resource::<EntityEvents>().cloned().unwrap();
         self.components
             .entry(TypeId::of::<T>())
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .insert(entity, Box::new(component));
 
         self.entities
             .entry(entity)
-            .or_insert(HashSet::new())
+            .or_insert_with(|| {
+                events.send(EntityEvent::Created(entity));
+                HashSet::new()
+            })
             .insert(TypeId::of::<T>());
+
+        events.send(EntityEvent::ComponentAdded(entity, TypeId::of::<T>()));
     }
 
     pub fn get_component<T: Component>(&self, entity: &Entity) -> Option<&T> {

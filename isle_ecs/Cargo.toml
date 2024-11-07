@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 hashbrown = { version = "0.14.2", features = ["raw"] }
 isle_ecs_macros = { path="./macros" }
+isle_event ={ path = "../isle_event" }
