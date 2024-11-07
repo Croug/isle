@@ -1,8 +1,12 @@
 use std::hash::Hash;
 
+use isle_ecs::ecs::ResMut;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 pub use isle_engine_macros::{define_axis_binding, define_binding};
+use winit::keyboard::KeyCode;
+
+use crate::{params::Event, window::KeyboardEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -121,6 +125,8 @@ pub enum Key {
     ScrollLock,
     Pause,
     Menu,
+
+    Unknown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -268,4 +274,127 @@ impl InputMap {
             fallback
         }
     }
+}
+
+impl From<KeyCode> for Key {
+    fn from(code: KeyCode) -> Self {
+        match code {
+            KeyCode::KeyA => Key::A,
+            KeyCode::KeyB => Key::B,
+            KeyCode::KeyC => Key::C,
+            KeyCode::KeyD => Key::D,
+            KeyCode::KeyE => Key::E,
+            KeyCode::KeyF => Key::F,
+            KeyCode::KeyG => Key::G,
+            KeyCode::KeyH => Key::H,
+            KeyCode::KeyI => Key::I,
+            KeyCode::KeyJ => Key::J,
+            KeyCode::KeyK => Key::K,
+            KeyCode::KeyL => Key::L,
+            KeyCode::KeyM => Key::M,
+            KeyCode::KeyN => Key::N,
+            KeyCode::KeyO => Key::O,
+            KeyCode::KeyP => Key::P,
+            KeyCode::KeyQ => Key::Q,
+            KeyCode::KeyR => Key::R,
+            KeyCode::KeyS => Key::S,
+            KeyCode::KeyT => Key::T,
+            KeyCode::KeyU => Key::U,
+            KeyCode::KeyV => Key::V,
+            KeyCode::KeyW => Key::W,
+            KeyCode::KeyX => Key::X,
+            KeyCode::KeyY => Key::Y,
+            KeyCode::KeyZ => Key::Z,
+
+            KeyCode::Backquote => Key::Grave,
+            KeyCode::Minus => Key::Minus,
+            KeyCode::Equal => Key::Equal,
+            KeyCode::BracketLeft => Key::LeftBracket,
+            KeyCode::BracketRight => Key::RightBracket,
+            KeyCode::Backslash => Key::Backslash,
+            KeyCode::Semicolon => Key::Semicolon,
+            KeyCode::Quote => Key::Apostrophe,
+            KeyCode::Comma => Key::Comma,
+            KeyCode::Period => Key::Period,
+            KeyCode::Slash => Key::Slash,
+
+            KeyCode::Digit0 => Key::Num0,
+            KeyCode::Digit1 => Key::Num1,
+            KeyCode::Digit2 => Key::Num2,
+            KeyCode::Digit3 => Key::Num3,
+            KeyCode::Digit4 => Key::Num4,
+            KeyCode::Digit5 => Key::Num5,
+            KeyCode::Digit6 => Key::Num6,
+            KeyCode::Digit7 => Key::Num7,
+            KeyCode::Digit8 => Key::Num8,
+            KeyCode::Digit9 => Key::Num9,
+
+            KeyCode::Numpad0 => Key::NumPad0,
+            KeyCode::Numpad1 => Key::NumPad1,
+            KeyCode::Numpad2 => Key::NumPad2,
+            KeyCode::Numpad3 => Key::NumPad3,
+            KeyCode::Numpad4 => Key::NumPad4,
+            KeyCode::Numpad5 => Key::NumPad5,
+            KeyCode::Numpad6 => Key::NumPad6,
+            KeyCode::Numpad7 => Key::NumPad7,
+            KeyCode::Numpad8 => Key::NumPad8,
+            KeyCode::Numpad9 => Key::NumPad9,
+            KeyCode::NumpadAdd => Key::NumPadAdd,
+            KeyCode::NumpadSubtract => Key::NumPadSubtract,
+            KeyCode::NumpadMultiply => Key::NumPadMultiply,
+            KeyCode::NumpadDivide => Key::NumPadDivide,
+            KeyCode::NumpadDecimal => Key::NumPadDecimal,
+            KeyCode::NumpadEnter => Key::NumPadEnter,
+
+            KeyCode::F1 => Key::F1,
+            KeyCode::F2 => Key::F2,
+            KeyCode::F3 => Key::F3,
+            KeyCode::F4 => Key::F4,
+            KeyCode::F5 => Key::F5,
+            KeyCode::F6 => Key::F6,
+            KeyCode::F7 => Key::F7,
+            KeyCode::F8 => Key::F8,
+            KeyCode::F9 => Key::F9,
+            KeyCode::F10 => Key::F10,
+            KeyCode::F11 => Key::F11,
+            KeyCode::F12 => Key::F12,
+
+            KeyCode::ArrowUp => Key::Up,
+            KeyCode::ArrowDown => Key::Down,
+            KeyCode::ArrowLeft => Key::Left,
+            KeyCode::ArrowRight => Key::Right,
+
+            KeyCode::Space => Key::Space,
+            KeyCode::Enter => Key::Enter,
+            KeyCode::Escape => Key::Escape,
+            KeyCode::Backspace => Key::Backspace,
+            KeyCode::Tab => Key::Tab,
+            KeyCode::CapsLock => Key::CapsLock,
+            KeyCode::ShiftLeft => Key::LeftShift,
+            KeyCode::ControlLeft => Key::LeftControl,
+            KeyCode::AltLeft => Key::LeftAlt,
+            KeyCode::ShiftRight => Key::RightShift,
+            KeyCode::ControlRight => Key::RightControl,
+            KeyCode::AltRight => Key::RightAlt,
+            KeyCode::SuperLeft | KeyCode::SuperRight => Key::Super,
+            KeyCode::Insert => Key::Insert,
+            KeyCode::Delete => Key::Delete,
+            KeyCode::Home => Key::Home,
+            KeyCode::End => Key::End,
+            KeyCode::PageUp => Key::PageUp,
+            KeyCode::PageDown => Key::PageDown,
+            KeyCode::PrintScreen => Key::PrintScreen,
+            KeyCode::ScrollLock => Key::ScrollLock,
+            KeyCode::Pause => Key::Pause,
+            KeyCode::ContextMenu => Key::Menu,
+
+            _ => Key::Unknown,
+        }
+    }
+}
+
+pub fn update_input(mut event: Event<KeyboardEvent>, mut input_map: ResMut<InputMap>) {
+    event.iter().for_each(|event| {
+        input_map.set_key(event.key, event.state);
+    });
 }

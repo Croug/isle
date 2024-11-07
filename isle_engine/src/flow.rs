@@ -10,11 +10,13 @@ use isle_ecs::{
     prelude::Component,
     world::World,
 };
+use winit::{error::EventLoopError, event_loop::{self, EventLoop}, window::Window};
 
-use crate::{event::EventWriter, executor::Executor, plugin::EngineHook, schedule::Scheduler};
+use crate::{event::{EventReader, EventWriter}, executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
+    pub(crate) window: Option<Window>,
     system_sets: Vec<SystemSet>,
     scheduler: S,
     executor: E,
@@ -78,13 +80,15 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         });
     }
 
-    pub fn run(&mut self) -> ! {
-        loop {
-            self.spin();
-        }
+    pub fn run(&mut self) -> Result<(), EventLoopError> {
+        self.add_resource(InputMap::new());
+        self.add_prefix_system(crate::input::update_input);
+        let event_loop = EventLoop::new().unwrap();
+        event_loop.set_control_flow(event_loop::ControlFlow::Poll);
+        event_loop.run_app(self)
     }
 
-    pub fn send_event<T: Clone + Debug + 'static>(&mut self, event: T) {
+    fn get_event_writer<T: Clone + Debug + 'static>(&self) -> &EventWriter<T> {
         let world = unsafe { &*self.world.get() };
         let writer = world
             .get_resource::<EventWriter<T>>()
@@ -94,7 +98,15 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
                 world.store_resource(writer);
                 world.get_resource().unwrap()
             });
-        writer.clone().send(event);
+        writer
+    }
+
+    pub fn send_event<T: Clone + Debug + 'static>(&mut self, event: T) {
+        self.get_event_writer().clone().send(event);
+    }
+
+    pub fn get_event_listener<T: Clone + Debug + 'static>(&self) -> EventReader<T> {
+        EventReader::from_writer(self.get_event_writer())
     }
 
     pub fn get_scheduler(&mut self) -> &mut S {
@@ -192,6 +204,7 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
                 generation: AtomicU32::new(0),
                 next_entity: AtomicU32::new(0),
                 hooks: self.hooks,
+                window: None,
             }
         } else {
             panic!("FlowBuilder missing required fields");

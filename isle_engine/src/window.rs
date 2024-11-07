@@ -1,21 +1,27 @@
 use std::sync::OnceLock;
 
-use winit::{application::ApplicationHandler, window::{Window, WindowAttributes}};
+use isle_ecs::ecs::ResMut;
+use isle_math::vector::d2::Vec2;
+use winit::{application::ApplicationHandler, event::{self, ElementState, KeyEvent, WindowEvent}, keyboard::PhysicalKey, window::{Window, WindowAttributes}};
 
-use crate::{executor::Executor, flow::Flow, schedule::Scheduler};
-
-static WINDOW: OnceLock<Window> = OnceLock::new();
+use crate::{executor::Executor, flow::Flow, input::{InputMap, Key}, params::Event, schedule::Scheduler};
 
 #[derive(Debug, Clone, Copy)]
-struct ReconfigureSurface;
+pub struct ReconfigureSurface(pub Vec2);
+
+#[derive(Debug, Clone, Copy)]
+pub struct KeyboardEvent {
+    pub state: bool,
+    pub key: Key,
+}
 
 impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if WINDOW.get().is_none() {
-            let window = event_loop.create_window(WindowAttributes::default()).unwrap();
-            WINDOW.set(window).unwrap();
+        if self.window.is_none() {
+            self.window = Some(event_loop.create_window(WindowAttributes::default()).unwrap());
         }
-        self.send_event(ReconfigureSurface);
+        let size = self.window.as_ref().unwrap().inner_size();
+        self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
     }
 
     fn window_event(
@@ -24,6 +30,39 @@ impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        WINDOW.get().unwrap();
+        let window = self.window.as_ref().unwrap();
+
+        if window_id != window.id() {
+            return;
+        }
+
+        match event {
+            WindowEvent::RedrawRequested => {
+                self.spin();
+                self.window.as_ref().unwrap().request_redraw();
+            }
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+            WindowEvent::Resized(size) => {
+                self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
+            }
+
+            WindowEvent::KeyboardInput {
+                event: KeyEvent {
+                    state,
+                    physical_key: PhysicalKey::Code(key_code),
+                    ..
+                }, 
+                ..
+            } => {
+                self.send_event(KeyboardEvent {
+                    state: state == ElementState::Pressed,
+                    key: key_code.into(),
+                })
+            }
+
+            _ => ()
+        }
     }
 }

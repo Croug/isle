@@ -47,7 +47,7 @@ fn main() {
     // flow.add_system(my_event_system);
 
     flow.add_system(my_input_system);
-    flow.add_system(my_fake_input);
+    // flow.add_system(my_fake_input);
 
     flow.run();
 }
@@ -118,7 +118,7 @@ fn my_event_signal(mut event: EventTrigger<MyEvent>) {
 //     }
 // }
 
-define_binding!(MyMapping, Key::A | Key::B | Key::C | Button::North | Button::South);
+define_binding!(MyMapping, Key::Up | Key::W);
 
 // struct MyAxisMapping;
 
