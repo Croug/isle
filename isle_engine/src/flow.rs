@@ -18,6 +18,7 @@ pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
     pub(crate) window: Option<Window>,
     system_sets: Vec<SystemSet>,
+    run_once_systems: Option<SystemSet>,
     scheduler: S,
     executor: E,
     hooks: Vec<Box<dyn EngineHook<S, E>>>,
@@ -35,6 +36,11 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
     }
 
     fn run_schedules(&mut self) {
+        self.run_once_systems.take().map(|mut system_set| {
+            let schedule = self.scheduler.get_schedule(&self.world, &system_set);
+            self.executor.run(&mut system_set, &self.world, &schedule);
+        });
+
         for system_set in self.system_sets.iter_mut() {
             let schedule = self.scheduler.get_schedule(&self.world, system_set);
             self.executor.run(system_set, &self.world, &schedule);
@@ -139,6 +145,10 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         world.store_component(entity, component);
     }
 
+    pub fn run_once<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+        self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
+    }
+
     pub fn add_prefix_system<I, T: System + 'static>(
         &mut self,
         system: impl IntoSystem<I, System = T>,
@@ -205,6 +215,7 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
                 next_entity: AtomicU32::new(0),
                 hooks: self.hooks,
                 window: None,
+                run_once_systems: None,
             }
         } else {
             panic!("FlowBuilder missing required fields");
