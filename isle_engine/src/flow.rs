@@ -1,7 +1,7 @@
 use std::{
     cell::UnsafeCell,
     fmt::Debug,
-    sync::atomic::{AtomicU32, Ordering},
+    sync::{atomic::{AtomicU32, Ordering}, OnceLock},
 };
 
 use isle_ecs::{
@@ -16,7 +16,6 @@ use crate::{event::{EventReader, EventWriter}, executor::Executor, input::InputM
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
-    pub(crate) window: Option<Window>,
     system_sets: Vec<SystemSet>,
     run_once_systems: Option<SystemSet>,
     scheduler: S,
@@ -216,7 +215,6 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
                 generation: AtomicU32::new(0),
                 next_entity: AtomicU32::new(0),
                 hooks: self.hooks,
-                window: None,
                 run_once_systems: None,
             }
         } else {

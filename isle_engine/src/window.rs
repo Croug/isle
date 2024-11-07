@@ -1,10 +1,11 @@
 use std::sync::OnceLock;
 
-use isle_ecs::ecs::ResMut;
 use isle_math::vector::d2::Vec2;
-use winit::{application::ApplicationHandler, event::{self, ElementState, KeyEvent, WindowEvent}, keyboard::PhysicalKey, window::{Window, WindowAttributes}};
+use winit::{application::ApplicationHandler, event::{ElementState, KeyEvent, WindowEvent}, keyboard::PhysicalKey, window::{Window, WindowAttributes}};
 
-use crate::{executor::Executor, flow::Flow, input::{InputMap, Key}, params::Event, schedule::Scheduler};
+use crate::{executor::Executor, flow::Flow, input::Key, schedule::Scheduler};
+
+pub static WINDOW: OnceLock<Window> = OnceLock::new();
 
 #[derive(Debug, Clone, Copy)]
 pub struct ReconfigureSurface(pub Vec2);
@@ -17,10 +18,10 @@ pub struct KeyboardEvent {
 
 impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if self.window.is_none() {
-            self.window = Some(event_loop.create_window(WindowAttributes::default()).unwrap());
+        if WINDOW.get().is_none() {
+            WINDOW.set(event_loop.create_window(WindowAttributes::default()).unwrap()).unwrap();
         }
-        let size = self.window.as_ref().unwrap().inner_size();
+        let size = WINDOW.get().unwrap().inner_size();
         self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
     }
 
@@ -30,7 +31,7 @@ impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        let window = self.window.as_ref().unwrap();
+        let window = WINDOW.get().unwrap();
 
         if window_id != window.id() {
             return;
@@ -39,7 +40,7 @@ impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
         match event {
             WindowEvent::RedrawRequested => {
                 self.spin();
-                self.window.as_ref().unwrap().request_redraw();
+                WINDOW.get().unwrap().request_redraw();
             }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
