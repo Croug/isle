@@ -206,8 +206,14 @@ impl<T: AxisMapping + 'static> SystemParam for InputAxis<T> {
     }
 }
 
-struct Tick {
+pub struct Tick {
     delta: f32,
+}
+
+impl Tick {
+    pub fn delta(&self) -> f32 {
+        self.delta
+    }
 }
 
 impl SystemParam for Tick {
