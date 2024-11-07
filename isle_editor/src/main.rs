@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
 
 use isle::prelude::*;
-use isle_engine::{input::{define_binding, define_axis_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
+use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 
 struct MyResource(pub usize);
 

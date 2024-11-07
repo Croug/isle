@@ -10,9 +10,10 @@ use isle_ecs::{
     prelude::Component,
     world::World,
 };
+use isle_event::{EventReader, EventWriter};
 use winit::{error::EventLoopError, event_loop::{self, EventLoop}};
 
-use crate::{event::{EventReader, EventWriter}, executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
+use crate::{executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
 
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,

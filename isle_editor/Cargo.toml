@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 isle = { path = "../" }
+isle_event = { path = "../isle_event" }
