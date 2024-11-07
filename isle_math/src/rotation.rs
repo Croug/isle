@@ -241,6 +241,10 @@ impl Rotation {
             }
         }
     }
+
+    pub fn forward(&self) -> Vec3 {
+        *self * Vec3::FORWARD
+    }
 }
 
 impl Into<Quaternion> for &Rotation {
