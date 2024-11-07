@@ -10,6 +10,7 @@ isle_engine_macros ={ path = "macros" }
 isle_ecs = { path = "../isle_ecs" }
 isle_math = { path = "../isle_math" }
 rustc-hash = "2.0.0"
+winit = "0.30.5"
 
 [features]
 default = []
