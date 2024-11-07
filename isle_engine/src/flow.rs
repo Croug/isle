@@ -39,11 +39,13 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         self.run_once_systems.take().map(|mut system_set| {
             let schedule = self.scheduler.get_schedule(&self.world, &system_set);
             self.executor.run(&mut system_set, &self.world, &schedule);
+            unsafe { &mut *self.world.get() }.apply_commands();
         });
 
         for system_set in self.system_sets.iter_mut() {
             let schedule = self.scheduler.get_schedule(&self.world, system_set);
             self.executor.run(system_set, &self.world, &schedule);
+            unsafe { &mut *self.world.get() }.apply_commands();
         }
     }
 
