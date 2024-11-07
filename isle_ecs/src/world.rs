@@ -1,25 +1,36 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashSet,
+    collections::HashSet, sync::mpsc::{Receiver, Sender},
 };
 
 use hashbrown::HashMap;
 
 use crate::{component::Component, entity::Entity};
 
+pub type Command = Box<dyn FnOnce(&mut World)>;
+
 pub struct World {
     components: HashMap<TypeId, HashMap<Entity, Box<dyn Any>>>,
     resources: HashMap<TypeId, Box<dyn Any>>,
     entities: HashMap<Entity, HashSet<TypeId>>,
+    command_sender: Sender<Command>,
+    command_receiver: Receiver<Command>,
 }
 
 impl World {
     pub fn new() -> Self {
+        let (command_sender, command_receiver) = std::sync::mpsc::channel();
         Self {
             components: HashMap::new(),
             resources: HashMap::new(),
             entities: HashMap::new(),
+            command_sender,
+            command_receiver,
         }
+    }
+
+    pub fn command_sender(&self) -> &Sender<Command> {
+        &self.command_sender
     }
 
     pub fn store_resource<T: 'static>(&mut self, resource: T) {
@@ -28,6 +39,12 @@ impl World {
 
     pub fn get_resource<T: 'static>(&self) -> Option<&T> {
         self.resources.get(&TypeId::of::<T>())?.downcast_ref::<T>()
+    }
+
+    pub fn apply_commands(&mut self) {
+        while let Ok(command) = self.command_receiver.try_recv() {
+            command(self);
+        }
     }
 
     pub unsafe fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T> {
