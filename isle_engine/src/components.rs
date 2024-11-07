@@ -6,6 +6,7 @@ pub struct Transform {
     position: Vec3,
     orientation: Rotation,
     scale: Vec3,
+    dirty: bool,
 }
 
 impl Transform {
@@ -14,6 +15,7 @@ impl Transform {
             position,
             orientation,
             scale,
+            dirty: true,
         }
     }
 
@@ -22,6 +24,7 @@ impl Transform {
             position: Vec3::ZERO,
             orientation: Rotation::quaternion_identity(),
             scale: Vec3::IDENTITY,
+            dirty: true,
         }
     }
 
@@ -33,31 +36,41 @@ impl Transform {
         self.orientation
     }
 
-    pub fn scale_by(&self) -> Vec3 {
+    pub fn scale(&self) -> Vec3 {
         self.scale
+    }
+    
+    pub fn dirty(&self) -> bool {
+        self.dirty
     }
 
     pub fn translate(&mut self, translation: Vec3) {
         self.position += translation;
+        self.dirty = true;
     }
 
     pub fn rotate(&mut self, rotation: Rotation) {
         self.orientation = rotation * self.orientation;
+        self.dirty = true;
     }
 
-    pub fn scale(&mut self, scale: Vec3) {
+    pub fn scale_by(&mut self, scale: Vec3) {
         self.scale *= scale;
+        self.dirty = true;
     }
 
     pub fn set_translation(&mut self, translation: Vec3) {
         self.position = translation;
+        self.dirty = true;
     }
 
     pub fn set_rotation(&mut self, rotation: Rotation) {
         self.orientation = rotation;
+        self.dirty = true;
     }
 
     pub fn set_scale(&mut self, scale: Vec3) {
         self.scale = scale;
+        self.dirty = true;
     }
 }
