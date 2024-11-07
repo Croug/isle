@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    ops::Deref,
+    ops::Deref, time::Instant,
 };
 
 use isle_ecs::{
@@ -203,5 +203,27 @@ impl<T: AxisMapping + 'static> SystemParam for InputAxis<T> {
 
     fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
         types.insert_type::<T>(RefType::Immutable);
+    }
+}
+
+struct Tick {
+    delta: f32,
+}
+
+impl SystemParam for Tick {
+    type State = Instant;
+    type Item<'a> = Tick;
+
+    fn init_state(_: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
+        Instant::now()
+    }
+    fn from_world<'w>(world: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
+        let delta = state.elapsed().as_secs_f32();
+        *state = Instant::now();
+
+        Tick { delta }
+    }
+    fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
+        types.insert_type::<Instant>(RefType::Immutable);
     }
 }
