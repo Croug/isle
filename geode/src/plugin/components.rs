@@ -5,34 +5,40 @@ use crate::{camera::CameraProjection, material::IntoBindGroup};
 
 #[derive(Component)]
 pub struct Camera {
-    pub projection: CameraProjection,
-    pub znear: f32,
-    pub zfar: f32,
+    pub(crate) id: usize,
+    pub(crate) projection: CameraProjection,
+    pub(crate) znear: f32,
+    pub(crate) zfar: f32,
+    pub(crate) dirty: bool,
 }
 
 #[derive(Component)]
 pub struct Mesh {
-    geometry: usize,
-    instance: usize,
+    pub(crate) geometry: usize,
+    pub(crate) instance: usize,
 }
 
 #[derive(Component)]
 pub struct Material {
-    material: usize,
-    instance: usize,
-    settings: Box<dyn IntoBindGroup>,
+    pub(crate) material: usize,
+    pub(crate) instance: usize,
+    pub(crate) settings: Box<dyn IntoBindGroup>,
 }
 
 #[derive(Component)]
 pub struct PointLight {
-    color: Vec3,
-    intensity: f32,
+    pub(crate) id: usize,
+    pub(crate) color: Vec3,
+    pub(crate) intensity: f32,
+    pub(crate) dirty: bool,
 }
 
 #[derive(Component)]
 pub struct SpotLight {
-    color: Vec3,
-    intensity: f32,
-    outer: Angle,
-    inner: Angle,
+    pub(crate) id: usize,
+    pub(crate) color: Vec3,
+    pub(crate) intensity: f32,
+    pub(crate) outer: Angle,
+    pub(crate) inner: Angle,
+    pub(crate) dirty: bool,
 }
