@@ -1,7 +1,7 @@
 use isle_ecs::prelude::Component;
 use isle_math::{rotation::Angle, vector::d3::Vec3};
 
-use crate::{camera::CameraProjection, material::IntoBindGroup};
+use crate::camera::CameraProjection;
 
 #[derive(Component)]
 pub struct Camera {
@@ -15,14 +15,14 @@ pub struct Camera {
 #[derive(Component)]
 pub struct Mesh {
     pub(crate) geometry: usize,
-    pub(crate) instance: usize,
+    pub(crate) instance: Option<usize>,
+    pub(crate) dirty: bool,
 }
 
 #[derive(Component)]
 pub struct Material {
     pub(crate) material: usize,
     pub(crate) instance: usize,
-    pub(crate) settings: Box<dyn IntoBindGroup>,
 }
 
 #[derive(Component)]

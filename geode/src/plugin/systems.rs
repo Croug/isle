@@ -1,4 +1,4 @@
-use isle_ecs::{command::WorldCommand, ecs::{Res, ResMut}, query::Query};
+use isle_ecs::{command::WorldCommand, ecs::ResMut, query::Query};
 use isle_engine::{prelude::Transform, window::WINDOW};
 use isle_math::vector::d2::Vec2;
 
@@ -20,7 +20,7 @@ pub fn setup(mut command: WorldCommand) {
     command.add_resource(renderer);
 }
 
-pub fn update_cameras(cameras: Query<(&Camera, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn update_cameras(cameras: Query<(&mut Camera, &Transform)>, mut renderer: ResMut<Renderer>) {
     cameras
         .iter()
         .filter(|(camera, transform)| camera.dirty || transform.dirty())
@@ -29,6 +29,7 @@ pub fn update_cameras(cameras: Query<(&Camera, &Transform)>, mut renderer: ResMu
 
             if camera.dirty {
                 render_camera.update_projection(camera.znear, camera.zfar, camera.projection);
+                camera.dirty = false;
             }
 
             if transform.dirty() {
@@ -38,7 +39,7 @@ pub fn update_cameras(cameras: Query<(&Camera, &Transform)>, mut renderer: ResMu
         });
 }
 
-pub fn update_lights(point_lights: Query<(&PointLight, &Transform)>, spot_lights: Query<(&SpotLight, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn update_lights(point_lights: Query<(&mut PointLight, &Transform)>, spot_lights: Query<(&mut SpotLight, &Transform)>, mut renderer: ResMut<Renderer>) {
     let lights = renderer.lighting_mut();
     point_lights
         .iter()
@@ -49,6 +50,8 @@ pub fn update_lights(point_lights: Query<(&PointLight, &Transform)>, spot_lights
                 color: light.color,
                 intensity: light.intensity,
             });
+
+            light.dirty = false;
         });
 
     spot_lights
@@ -62,16 +65,28 @@ pub fn update_lights(point_lights: Query<(&PointLight, &Transform)>, spot_lights
                 direction: transform.orientation().forward(),
                 outer: light.outer,
                 inner: light.inner,
-            })
+            });
+            
+            light.dirty = false;
         });
 }
 
-pub fn update_instances(query: Query<(&Mesh, &Material, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn update_instances(query: Query<(&mut Mesh, &Material, &Transform)>, mut renderer: ResMut<Renderer>) {
     query
         .iter()
-        .filter(|(_, _, transform)| transform.dirty())
+        .filter(|(mesh, _, transform)| (transform.dirty() || mesh.dirty) && mesh.instance.is_some())
         .for_each(|(mesh, material, transform)| {
             let geometry = renderer.geometry_mut(mesh.geometry);
-            geometry.update_instance(material.material, mesh.instance, transform.position(), transform.orientation(), transform.scale());
+            geometry.update_instance(material.material, mesh.instance.unwrap(), transform.position(), transform.orientation(), transform.scale());
+            mesh.dirty = false;
+        });
+}
+
+pub fn create_geometries(instances: Query<(&mut Mesh, &Material, &Transform)>, mut renderer: ResMut<Renderer>) {
+    instances
+        .iter()
+        .filter(|(mesh, _, _)| mesh.instance.is_none())
+        .for_each(|(mesh, material, transform)| {
+            mesh.instance = Some(renderer.instantiate_geometry(mesh.geometry, material.material, material.instance, transform.position(), transform.orientation(), transform.scale()));
         });
 }
