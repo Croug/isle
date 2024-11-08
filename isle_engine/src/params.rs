@@ -1,12 +1,9 @@
 use std::{
-    ops::Deref,
-    time::Instant,
-    fmt::Debug,
+    cell::UnsafeCell, collections::HashSet, fmt::Debug, ops::Deref, time::Instant
 };
 
 use isle_ecs::{
-    ecs::{RefType, SystemParam},
-    world,
+    ecs::{BorrowSignature, RefType, SystemParam}, entity::Entity, query::QueryParam, world::{self, World}
 };
 
 use isle_event::{EventReader, EventWriter};
@@ -231,5 +228,37 @@ impl<'a, T: Clone + Debug + 'static> SystemParam for EventTrigger<'a, T> {
 
     fn collect_types(types: &mut impl isle_ecs::prelude::TypeSet) {
         types.insert_type::<T>(RefType::Immutable);
+    }
+}
+
+pub struct Lookup<'w> {
+    world: &'w UnsafeCell<World>,
+}
+
+impl Lookup<'_> {
+    pub fn validate<T: QueryParam>(&self, entity: Entity) -> bool {
+        let mut type_set = HashSet::<BorrowSignature>::default();
+        T::get_components(&mut type_set);
+
+        let type_set = type_set
+            .iter()
+            .map(|x| x.0).collect();
+
+        let world = unsafe { &*self.world.get() };
+        let components = world.get_entity_components(&entity);
+
+        components.is_superset(&type_set)
+    }
+}
+
+impl SystemParam for Lookup<'_> {
+    type State = ();
+    type Item<'new> = Lookup<'new>;
+
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+    fn collect_types(_: &mut impl isle_ecs::prelude::TypeSet) {}
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &'w mut Self::State) -> Self::Item<'w> {
+        Lookup { world }
     }
 }
