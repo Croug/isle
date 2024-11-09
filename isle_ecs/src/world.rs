@@ -88,10 +88,10 @@ impl World {
             .downcast_ref::<T>()
     }
 
-    pub fn get_entities_with_component(&self, type_id: &TypeId) -> Vec<Entity> {
+    pub fn get_entities_with_component(&mut self, type_id: &TypeId) -> Vec<Entity> {
         self.components
-            .get(type_id)
-            .unwrap()
+            .entry(*type_id)
+            .or_insert_with(HashMap::new)
             .keys()
             .copied()
             .collect()
