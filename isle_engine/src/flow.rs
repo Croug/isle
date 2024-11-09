@@ -32,6 +32,9 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
             scheduler: None,
             executor: None,
             hooks: Vec::new(),
+            world: UnsafeCell::new(World::new()),
+            system_sets: (0..3).map(|_| SystemSet::new()).collect(),
+            run_once_systems: None,
         }
     }
 
@@ -187,6 +190,9 @@ pub struct FlowBuilder<S: Scheduler, E: Executor> {
     scheduler: Option<S>,
     executor: Option<E>,
     hooks: Vec<Box<dyn EngineHook<S, E>>>,
+    world: UnsafeCell<World>,
+    system_sets: Vec<SystemSet>,
+    run_once_systems: Option<SystemSet>,
 }
 
 impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
@@ -206,17 +212,38 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
     pub fn with_plugin<P: FnOnce(Self) -> Self>(self, plugin: P) -> Self {
         plugin(self)
     }
+    pub fn with_run_once<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
+        self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
+        self
+    }
+    pub fn with_prefix_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
+        self.system_sets[0].add_system(system, &self.world);
+        self
+    }
+    pub fn with_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
+        let current_set = self.current_set();
+        self.system_sets[current_set].add_system(system, &self.world);
+
+        self
+    }
+    pub fn with_postfix_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
+        self.system_sets.last_mut().unwrap().add_system(system, &self.world);
+        self
+    }
+    fn current_set(&self) -> usize {
+        self.system_sets.len() - 2
+    }
     pub fn build(self) -> Flow<S, E> {
         if let (Some(scheduler), Some(executor)) = (self.scheduler, self.executor) {
             Flow {
-                world: UnsafeCell::new(World::new()),
-                system_sets: (0..3).map(|_| SystemSet::new()).collect(),
+                world: self.world,
+                system_sets: self.system_sets,
                 scheduler,
                 executor,
                 generation: AtomicU32::new(0),
                 next_entity: AtomicU32::new(0),
                 hooks: self.hooks,
-                run_once_systems: None,
+                run_once_systems: self.run_once_systems,
             }
         } else {
             panic!("FlowBuilder missing required fields");
