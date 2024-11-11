@@ -1,7 +1,9 @@
 use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
 
+use geode::{camera::CameraCreationSettings, geometry::Geometry, plugin::components::Camera, renderer::Renderer};
 use isle::prelude::*;
 use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
+use isle_math::vector::d3::Vec3;
 
 struct MyResource(pub usize);
 
@@ -18,6 +20,20 @@ struct MyComponentThree;
 struct MyComponentFour;
 
 fn main() {
+    let mut flow = Flow::new()
+        .with_default_plugins()
+        .build();
+
+    let camera = flow.make_entity();
+    flow.add_component(camera, Camera::new(&CameraCreationSettings::default()));
+    let renderer = flow.get_resource_mut::<Renderer>().unwrap();
+
+    let mut cube = Geometry::cube(Vec3(100., 100., 100.));
+    cube.load_to_gpu(renderer.device());
+    let cube = renderer.add_geometry(cube);
+}
+
+fn main_old() {
     let mut flow = Flow::new().with_default_plugins().build();
 
     flow.add_resource(MyResource(0));

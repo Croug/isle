@@ -1,7 +1,13 @@
-use isle_engine::{executor::Executor, flow::FlowBuilder, schedule::Scheduler};
+use isle_engine::{executor::Executor, flow::FlowBuilder, plugin::EngineHook, schedule::Scheduler};
 
 pub mod components;
 pub mod systems;
+
+struct RenderPlugin;
+
+impl EngineHook for RenderPlugin {
+
+}
 
 pub fn geode_plugin<S: Scheduler, E: Executor>(mut flow: FlowBuilder<S, E>) -> FlowBuilder<S, E> {
     flow = flow.with_run_once(systems::setup);

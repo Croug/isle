@@ -132,6 +132,16 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         &self.world
     }
 
+    pub fn get_resource<T: 'static>(&self) -> Option<&T> {
+        let world = unsafe { &*self.world.get() };
+        world.get_resource::<T>()
+    }
+
+    pub fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        let world = unsafe { &mut *self.world.get() };
+        unsafe { world.get_resource_mut::<T>() }
+    }
+
     pub fn make_entity(&self) -> Entity {
         Entity(
             self.generation.load(Ordering::SeqCst),

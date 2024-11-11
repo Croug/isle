@@ -1,7 +1,7 @@
 use isle_ecs::prelude::Component;
 use isle_math::{rotation::Angle, vector::d3::Vec3};
 
-use crate::camera::CameraProjection;
+use crate::camera::{CameraCreationSettings, CameraProjection};
 
 #[derive(Component)]
 pub struct Camera {
@@ -10,6 +10,18 @@ pub struct Camera {
     pub(crate) znear: f32,
     pub(crate) zfar: f32,
     pub(crate) dirty: bool,
+}
+
+impl Camera {
+    pub fn new(settings: &CameraCreationSettings) -> Self {
+        Camera {
+            id: 0,
+            projection: settings.projection,
+            znear: settings.znear,
+            zfar: settings.zfar,
+            dirty: true,
+        }
+    }
 }
 
 #[derive(Component)]
