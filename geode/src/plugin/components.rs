@@ -31,10 +31,29 @@ pub struct Mesh {
     pub(crate) dirty: bool,
 }
 
+impl Mesh {
+    pub fn new(geometry: usize) -> Self {
+        Mesh {
+            geometry,
+            instance: None,
+            dirty: true,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Material {
     pub(crate) material: usize,
     pub(crate) instance: usize,
+}
+
+impl Material {
+    pub fn new(material: usize, instance: usize) -> Self {
+        Material {
+            material,
+            instance,
+        }
+    }
 }
 
 #[derive(Component)]

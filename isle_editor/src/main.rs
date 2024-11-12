@@ -1,6 +1,6 @@
-use std::{f32::consts::PI, time::{Instant, UNIX_EPOCH}};
+use std::{f32::consts::PI, path::PathBuf, str::FromStr, time::{Instant, UNIX_EPOCH}};
 
-use geode::{camera::CameraCreationSettings, geometry::Geometry, plugin::components::Camera, renderer::Renderer};
+use geode::{camera::CameraCreationSettings, geometry::Geometry, material, plugin::components::{Camera, Material, Mesh}, renderer::Renderer, texture::Texture};
 use isle::prelude::*;
 use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 use isle_math::vector::d3::Vec3;
@@ -31,6 +31,26 @@ fn main() {
     let mut cube = Geometry::cube(Vec3(100., 100., 100.));
     cube.load_to_gpu(renderer.device());
     let cube = renderer.add_geometry(cube);
+
+    let mut texture = Texture::new(&PathBuf::from_str("assets/happy_tree.png").unwrap());
+    texture.load_to_mem().unwrap();
+    texture.load_to_gpu(renderer.device(), renderer.queue());
+    let texture = renderer.add_texture(texture);
+
+    let material = geode::material::Material::default_shader(&renderer);
+    let material = renderer.add_material(material);
+    let material_instance = renderer.instantiate_material(material, "Material", &texture);
+
+    let entity = flow.make_entity();
+    flow.add_component(entity, Mesh::new(cube));
+    flow.add_component(entity, Material::new(material, material_instance));
+    flow.add_component(entity, Transform::identity());
+
+    flow.run().unwrap();
+}
+
+fn setup() {
+
 }
 
 fn main_old() {
