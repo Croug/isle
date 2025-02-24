@@ -18,9 +18,7 @@ pub struct KeyboardEvent {
 
 impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if WINDOW.get().is_none() {
-            WINDOW.set(event_loop.create_window(WindowAttributes::default()).unwrap()).unwrap();
-        }
+        WINDOW.set(event_loop.create_window(WindowAttributes::default()).unwrap()).unwrap();
         let size = WINDOW.get().unwrap().inner_size();
         self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
     }
