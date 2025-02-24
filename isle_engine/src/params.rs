@@ -65,6 +65,7 @@ impl<T: Mapping + 'static> SystemParam for Input<T> {
     fn from_world<'w>(
         world: &'w std::cell::UnsafeCell<world::World>,
         state: &'w mut Self::State,
+        _: &str
     ) -> Self::Item<'w> {
         let input_map = unsafe { &*world.get() }.get_resource::<InputMap>().unwrap();
         let input_state = T::get(input_map);
@@ -107,6 +108,7 @@ impl<T: AxisMapping + 'static> SystemParam for InputAxis<T> {
     fn from_world<'w>(
         world: &'w std::cell::UnsafeCell<world::World>,
         _: &'w mut Self::State,
+        _: &str,
     ) -> Self::Item<'w> {
         let input_map = unsafe { &*world.get() }.get_resource::<InputMap>().unwrap();
         let value = T::get(input_map);
@@ -139,7 +141,7 @@ impl SystemParam for Tick {
     fn init_state(_: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
         Instant::now()
     }
-    fn from_world<'w>(_: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(_: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State, _: &str) -> Self::Item<'w> {
         let delta = state.elapsed().as_secs_f32();
         *state = Instant::now();
 
@@ -173,6 +175,7 @@ impl<'a, T: Clone + Debug + 'static> SystemParam for Event<'a, T> {
     fn from_world<'w>(
         _: &'w std::cell::UnsafeCell<isle_ecs::world::World>,
         state: &'w mut Self::State,
+        _: &str,
     ) -> Self::Item<'w> {
         Event { reader: state }
     }
@@ -222,6 +225,7 @@ impl<'a, T: Clone + Debug + 'static> SystemParam for EventTrigger<'a, T> {
     fn from_world<'w>(
         _: &'w std::cell::UnsafeCell<isle_ecs::world::World>,
         state: &'w mut Self::State,
+        _: &str,
     ) -> Self::Item<'w> {
         EventTrigger { writer: state }
     }
@@ -258,7 +262,7 @@ impl SystemParam for Lookup<'_> {
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
     fn collect_types(_: &mut impl isle_ecs::prelude::TypeSet) {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &'w mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &'w mut Self::State, _: &str) -> Self::Item<'w> {
         Lookup { world }
     }
 }

@@ -99,7 +99,7 @@ pub trait SystemParam {
     type Item<'new>;
 
     fn init_state(world: &UnsafeCell<World>) -> Self::State;
-    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &'w mut Self::State) -> Self::Item<'w>;
+    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &'w mut Self::State, system_info: &str) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
 }
 
@@ -119,9 +119,11 @@ impl<'a, T> SystemParam for Res<'a, T> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
         let world = unsafe { &*world.get() };
-        Res(world.get_resource::<T>().unwrap())
+        Res(world.get_resource::<T>().unwrap_or_else(||{
+            panic!("Invalid system construction for type {}\nResource {} not found in world\nHint: try wrapping Res declaration in Option<>", system_info, type_name::<T>());
+        }))
     }
 
     fn collect_types(types: &mut impl TypeSet) {
@@ -151,13 +153,47 @@ impl<'a, T: 'static> SystemParam for ResMut<'a, T> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
         let world = unsafe { &mut *world.get() };
-        ResMut(unsafe { world.get_resource_mut::<T>().unwrap() })
+        ResMut(unsafe { world.get_resource_mut::<T>().unwrap_or_else(||{
+            panic!("Invalid system construction for type {}\nResource {} not found in world\nHint: try wrapping Res declaration in Option<>", system_info, type_name::<T>());
+        }) })
     }
 
     fn collect_types(types: &mut impl TypeSet) {
         types.insert_type::<T>(RefType::Mutable);
+    }
+}
+
+impl<'a, T: 'static> SystemParam for Option<Res<'a, T>> {
+    type State = ();
+    type Item<'new> = Option<Res<'new, T>>;
+
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
+        let world = unsafe { &*world.get() };
+        world.get_resource::<T>().map(Res)
+    }
+
+    fn collect_types(types: &mut impl TypeSet) {
+        types.insert_type::<T>(RefType::OptionalImmutable);
+    }
+}
+
+impl<'a, T: 'static> SystemParam for Option<ResMut<'a, T>> {
+    type State = ();
+    type Item<'new> = Option<ResMut<'new, T>>;
+
+    fn init_state(_: &UnsafeCell<World>) -> Self::State {}
+
+    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, _: &str) -> Self::Item<'w> {
+        let world = unsafe { &mut *world.get() };
+        unsafe { world.get_resource_mut::<T>().map(ResMut) }
+    }
+
+    fn collect_types(types: &mut impl TypeSet) {
+        types.insert_type::<T>(RefType::OptionalMutable);
     }
 }
 
@@ -186,10 +222,10 @@ macro_rules! impl_system_param {
                 ($($($params::init_state(world),)+)?)
             }
 
-            fn from_world<'w>(world: &'w UnsafeCell<World>, state: &mut Self::State) -> Self::Item<'w> {
+            fn from_world<'w>(world: &'w UnsafeCell<World>, state: &mut Self::State, system_info: &str) -> Self::Item<'w> {
                 let ($($($params,)+)?) = state;
                 $($(
-                    let $params = $params::from_world(unsafe { &*world }, $params);
+                    let $params = $params::from_world(unsafe { &*world }, $params, &system_info);
                 )+)?
 
                 ($($($params),+)?)
@@ -236,7 +272,7 @@ macro_rules! impl_system {
                 let ($($params,)*) = &mut self.s;
 
                 $(
-                    let $params = $params::from_world(&world, $params);
+                    let $params = $params::from_world(&world, $params, std::any::type_name::<F>());
                 )*
 
                 call_inner(&mut self.f, $($params),*);

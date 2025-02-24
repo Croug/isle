@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
 
-use crate::{ecs::{RefType, SystemParam, TypeSet}, world::{Command, World}};
+use crate::{ecs::{RefType, SystemParam, TypeSet}, entity::Entity, prelude::Component, world::{Command, World}};
 
 pub struct WorldCommand<'a> {
     sender: &'a mut Sender<Command>,
@@ -10,6 +10,11 @@ impl WorldCommand<'_> {
     pub fn add_resource<T: 'static>(&mut self, resource: T) {
         self.send(Box::new(move |world| {
             world.store_resource(resource);
+        }));
+    }
+    pub fn add_component<T: Component>(&mut self, entity: Entity, component: T) {
+        self.send(Box::new(move |world| {
+            world.store_component(entity, component);
         }));
     }
     pub fn send(&mut self, command: Command) {
@@ -30,7 +35,7 @@ impl<'a> SystemParam for WorldCommand<'a> {
         world.command_sender().clone()
     }
 
-    fn from_world<'w>(_: &'w std::cell::UnsafeCell<World>, state: &'w mut Self::State) -> Self::Item<'w> {
+    fn from_world<'w>(_: &'w std::cell::UnsafeCell<World>, state: &'w mut Self::State, _: &str) -> Self::Item<'w> {
         WorldCommand { sender: state }
     }
 }
