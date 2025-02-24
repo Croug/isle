@@ -16,7 +16,8 @@ name = "isle"
 [dependencies]
 isle_ecs = { path = "isle_ecs" }
 isle_engine = { path = "isle_engine" }
+geode = { path = "geode", features=["isle"], optional = true }
 
 [features]
-default = ["ecs"]
-ecs = []
+default = ["geode"]
+geode = ["dep:geode"]

@@ -1,7 +1,8 @@
 use std::{f32::consts::PI, path::PathBuf, str::FromStr, time::{Instant, UNIX_EPOCH}};
 
-use geode::{camera::CameraCreationSettings, geometry::Geometry, material, plugin::components::{Camera, Material, Mesh}, renderer::Renderer, texture::Texture};
+use geode::{camera::CameraCreationSettings, geometry::Geometry, material, plugin::components::{Camera, Material, Mesh}, renderer::{self, Renderer}, texture::Texture};
 use isle::prelude::*;
+use isle_ecs::command::WorldCommand;
 use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 use isle_math::vector::d3::Vec3;
 
@@ -24,9 +25,25 @@ fn main() {
         .with_default_plugins()
         .build();
 
-    let camera = flow.make_entity();
+    flow.add_resource(false);
+
+    flow.add_system(setup);
+
+    flow.run().unwrap();
+}
+
+fn setup(renderer: Option<ResMut<Renderer>>, mut flow: WorldCommand, mut run: ResMut<bool>) {
+    if *run {
+        return;
+    }
+
+    let mut renderer = match renderer {
+        Some(renderer) => renderer,
+        None => return,
+    };
+
+    let camera = Entity(0, 0);
     flow.add_component(camera, Camera::new(&CameraCreationSettings::default()));
-    let renderer = flow.get_resource_mut::<Renderer>().unwrap();
 
     let mut cube = Geometry::cube(Vec3(100., 100., 100.));
     cube.load_to_gpu(renderer.device());
@@ -41,16 +58,12 @@ fn main() {
     let material = renderer.add_material(material);
     let material_instance = renderer.instantiate_material(material, "Material", &texture);
 
-    let entity = flow.make_entity();
+    let entity = Entity(0, 1);
     flow.add_component(entity, Mesh::new(cube));
     flow.add_component(entity, Material::new(material, material_instance));
     flow.add_component(entity, Transform::identity());
 
-    flow.run().unwrap();
-}
-
-fn setup() {
-
+    *run = true;
 }
 
 fn main_old() {
