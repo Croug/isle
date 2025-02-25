@@ -19,22 +19,10 @@ impl RenderPlugin {
 }
 
 impl<S: Scheduler, E: Executor> EngineHook<S,E> for RenderPlugin {
-    fn pre_run(&mut self, world: &mut isle_ecs::world::World, scheduler: &mut S, executor: &mut E) {
-        let reconfigure_surface = world.get_resource::<EventWriter<ReconfigureSurface>>();
-        // let reconfigure_surface = reconfigure_surface.unwrap_or_else(|| {
-        //     world.store_resource(EventWriter::<ReconfigureSurface>::new());
-        //     world.get_resource::<EventWriter<ReconfigureSurface>>().unwrap()
-        // });
-
-        let reconfigure_surface = match reconfigure_surface {
-            Some(reconfigure_surface) => reconfigure_surface,
-            None => {
-                world.store_resource(EventWriter::<ReconfigureSurface>::new());
-                world.get_resource::<EventWriter<ReconfigureSurface>>().unwrap()
-            }
-        };
-
-        self.reconfigure_surface = Some(EventReader::from_writer(reconfigure_surface));
+    fn setup(&mut self, mut flow_builder: FlowBuilder<S, E>) -> FlowBuilder<S, E> {
+        let writer = EventWriter::<ReconfigureSurface>::new();
+        self.reconfigure_surface = Some(EventReader::from_writer(&writer));
+        flow_builder.with_resource(writer)
     }
     fn pre_render(&mut self, world: &mut isle_ecs::world::World, _scheduler: &mut S, _executor: &mut E) {
         let settings = self.get_reconfigure_surface_listener(world).iter().last();

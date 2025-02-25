@@ -210,6 +210,11 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
         self.scheduler = Some(scheduler);
         self
     }
+    pub fn with_resource<T: 'static>(mut self, resource: T) -> Self {
+        let world = unsafe { &mut *self.world.get() };
+        world.store_resource(resource);
+        self
+    }
     pub fn with_executor(mut self, executor: E) -> Self {
         self.executor = Some(executor);
         self
