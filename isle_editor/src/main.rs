@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, path::PathBuf, str::FromStr, time::{Instant, UNIX_EPOCH}};
 
 use geode::{camera::CameraCreationSettings, geometry::Geometry, material, plugin::components::{Camera, Material, Mesh}, renderer::{self, Renderer}, texture::Texture};
-use isle::prelude::*;
+use isle::{isle_engine::flow::stages, prelude::*};
 use isle_ecs::command::WorldCommand;
 use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
 use isle_math::vector::d3::Vec3;
@@ -27,7 +27,7 @@ fn main() {
 
     flow.add_resource(false);
 
-    flow.add_system(setup);
+    flow.push_system(setup);
 
     flow.run().unwrap();
 }
@@ -83,7 +83,7 @@ fn main_old() {
     flow.add_component(entity_b, MyComponentThree);
     flow.add_component(entity_b, MyComponentFour);
 
-    flow.add_postfix_system(my_counting_system);
+    flow.add_system(stages::POST_RUN, my_counting_system);
 
     // flow.add_system(my_complete_system);
     // flow.add_system(my_resource_system);
@@ -95,7 +95,7 @@ fn main_old() {
     // flow.add_system(my_event_signal);
     // flow.add_system(my_event_system);
 
-    flow.add_system(my_input_system);
+    flow.push_system(my_input_system);
     // flow.add_system(my_fake_input);
 
     flow.run();

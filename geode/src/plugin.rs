@@ -1,4 +1,4 @@
-use isle_engine::{executor::Executor, flow::FlowBuilder, plugin::EngineHook, schedule::Scheduler, window::ReconfigureSurface};
+use isle_engine::{executor::Executor, flow::{FlowBuilder, stages}, plugin::EngineHook, schedule::Scheduler, window::ReconfigureSurface};
 use isle_event::{EventReader, EventWriter};
 use wgpu::SurfaceError;
 
@@ -50,10 +50,10 @@ impl<S: Scheduler, E: Executor> EngineHook<S,E> for RenderPlugin {
 pub fn geode_plugin<S: Scheduler, E: Executor>(mut flow: FlowBuilder<S, E>) -> FlowBuilder<S, E> {
     flow = flow.with_run_once(systems::setup);
 
-    flow = flow.with_postfix_system(systems::update_cameras);
-    flow = flow.with_postfix_system(systems::update_lights);
-    flow = flow.with_postfix_system(systems::update_instances);
-    flow = flow.with_postfix_system(systems::create_geometries);
+    flow = flow.with_staged_system(stages::POST_RUN, systems::update_cameras);
+    flow = flow.with_staged_system(stages::POST_RUN, systems::update_lights);
+    flow = flow.with_staged_system(stages::POST_RUN, systems::update_instances);
+    flow = flow.with_staged_system(stages::POST_RUN, systems::create_geometries);
 
     flow = flow.with_hook(RenderPlugin::default());
 

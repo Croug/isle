@@ -15,6 +15,15 @@ use winit::{error::EventLoopError, event_loop::{self, EventLoop}};
 
 use crate::{executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
 
+pub mod stages {
+    pub const PRE_RUN: usize = 0;
+    pub const POST_RUN: usize = 1;
+    pub const PRE_RENDER: usize = 2;
+    pub const RENDER: usize = 3;
+    pub const POST_RENDER: usize = 4;
+    pub const RUN: usize = 5;
+}
+
 pub struct Flow<S: Scheduler, E: Executor> {
     world: UnsafeCell<World>,
     system_sets: Vec<SystemSet>,
@@ -33,23 +42,35 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
             executor: None,
             hooks: Vec::new(),
             world: UnsafeCell::new(World::new()),
-            system_sets: (0..3).map(|_| SystemSet::new()).collect(),
+            system_sets: (0..6).map(|_| SystemSet::new()).collect(),
             run_once_systems: None,
         }
     }
 
+    fn run_schedule(&mut self, stage: usize) {
+        let system_set = &mut self.system_sets[stage];
+        let schedule = self.scheduler.get_schedule(&self.world, system_set);
+        self.executor.run(system_set, &self.world, &schedule);
+        unsafe { &mut *self.world.get() }.apply_commands();
+    }
+
     fn run_schedules(&mut self) {
         self.run_once_systems.take().map(|mut system_set| {
-            let schedule = self.scheduler.get_schedule(&self.world, &system_set);
+            let schedule = self.scheduler.get_schedule(&self.world, &mut system_set);
             self.executor.run(&mut system_set, &self.world, &schedule);
             unsafe { &mut *self.world.get() }.apply_commands();
         });
 
-        for system_set in self.system_sets.iter_mut() {
-            let schedule = self.scheduler.get_schedule(&self.world, system_set);
-            self.executor.run(system_set, &self.world, &schedule);
-            unsafe { &mut *self.world.get() }.apply_commands();
-        }
+        [
+            stages::PRE_RUN,
+            stages::RUN,
+            stages::POST_RUN,
+            stages::PRE_RENDER,
+            stages::RENDER,
+            stages::POST_RENDER,
+        ].iter().for_each(|&stage| {
+            self.run_schedule(stage);
+        });
     }
 
     pub fn spin(&mut self) {
@@ -93,7 +114,7 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
 
     pub fn run(&mut self) -> Result<(), EventLoopError> {
         self.add_resource(InputMap::new());
-        self.add_prefix_system(crate::input::update_input);
+        self.add_system(stages::PRE_RUN, crate::input::update_input);
         let event_loop = EventLoop::new().unwrap();
         event_loop.set_control_flow(event_loop::ControlFlow::Poll);
         event_loop.run_app(self)
@@ -164,35 +185,23 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
         self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
     }
 
-    pub fn add_prefix_system<I, T: System + 'static>(
-        &mut self,
-        system: impl IntoSystem<I, System = T>,
-    ) {
-        self.system_sets[0].add_system(system, &self.world);
+    pub fn add_system<I, T: System + 'static>(&mut self, stage: usize, system: impl IntoSystem<I, System = T>) {
+        self.system_sets[stage].add_system(system, &self.world);
     }
 
-    pub fn add_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
+    pub fn push_system<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
         let current_set = self.current_set();
         self.system_sets[current_set].add_system(system, &self.world);
     }
 
-    pub fn add_postfix_system<I, T: System + 'static>(
-        &mut self,
-        system: impl IntoSystem<I, System = T>,
-    ) {
-        self.system_sets
-            .last_mut()
-            .unwrap()
-            .add_system(system, &self.world);
-    }
+    pub fn push_set(&mut self) -> usize {
+        self.system_sets.push(SystemSet::new());
 
-    pub fn barrier(&mut self) {
-        let index = self.system_sets.len() - 1;
-        self.system_sets.insert(index, SystemSet::new());
+        self.current_set()
     }
 
     fn current_set(&self) -> usize {
-        self.system_sets.len() - 2
+        self.system_sets.len() - 1
     }
 }
 
@@ -210,7 +219,7 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
         self.scheduler = Some(scheduler);
         self
     }
-    pub fn with_resource<T: 'static>(mut self, resource: T) -> Self {
+    pub fn with_resource<T: 'static>(self, resource: T) -> Self {
         let world = unsafe { &mut *self.world.get() };
         world.store_resource(resource);
         self
@@ -231,22 +240,23 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
         self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
         self
     }
-    pub fn with_prefix_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
-        self.system_sets[0].add_system(system, &self.world);
-        self
-    }
     pub fn with_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
         let current_set = self.current_set();
         self.system_sets[current_set].add_system(system, &self.world);
 
         self
     }
-    pub fn with_postfix_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
-        self.system_sets.last_mut().unwrap().add_system(system, &self.world);
+    pub fn with_staged_system<I, T: System + 'static>(mut self, stage: usize, system: impl IntoSystem<I, System = T>) -> Self {
+        self.system_sets[stage].add_system(system, &self.world);
         self
     }
+    pub fn with_set(mut self) -> usize {
+        self.system_sets.push(SystemSet::new());
+
+        self.current_set()
+    }
     fn current_set(&self) -> usize {
-        self.system_sets.len() - 2
+        self.system_sets.len() - 1
     }
     pub fn build(self) -> Flow<S, E> {
         if let (Some(scheduler), Some(executor)) = (self.scheduler, self.executor) {
