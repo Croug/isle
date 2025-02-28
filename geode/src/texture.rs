@@ -9,10 +9,12 @@ use crate::{material::IntoBindGroup, renderer::Renderer};
 pub struct TextureId(pub usize);
 
 impl IntoBindGroup for TextureId {
-    fn into_bind_group<'a>(&'a self, data: &'a Renderer, bindings: &mut Vec<wgpu::BindGroupEntry<'a>>) {
-        data
-            .texture(*self)
-            .into_bind_group(data, bindings);
+    fn into_bind_group<'a>(
+        &'a self,
+        data: &'a Renderer,
+        bindings: &mut Vec<wgpu::BindGroupEntry<'a>>,
+    ) {
+        data.texture(*self).into_bind_group(data, bindings);
     }
 }
 
@@ -156,10 +158,7 @@ impl Texture {
         });
     }
 
-    pub fn create_depth_texture(
-        device: &wgpu::Device,
-        size: Vec2,
-    ) -> Self {
+    pub fn create_depth_texture(device: &wgpu::Device, size: Vec2) -> Self {
         let size = wgpu::Extent3d {
             width: size.0.max(1.0) as u32,
             height: size.1.max(1.0) as u32,
@@ -211,7 +210,7 @@ impl Texture {
         let size_wgpu = wgpu::Extent3d {
             width: size.0 as u32,
             height: size.1 as u32,
-            depth_or_array_layers: 1, 
+            depth_or_array_layers: 1,
         };
         let mut desc = wgpu::TextureDescriptor {
             label: Some(label),
@@ -287,7 +286,7 @@ impl IntoBindGroup for Texture {
             wgpu::BindGroupEntry {
                 binding: next_index + 1,
                 resource: wgpu::BindingResource::Sampler(&self.sampler()),
-            }
+            },
         ]);
     }
 }

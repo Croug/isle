@@ -10,10 +10,13 @@ pub fn setup(mut command: WorldCommand) {
     let window = WINDOW.get().unwrap();
     let size = window.inner_size();
     let size = Vec2(size.width as f32, size.height as f32);
-    let renderer = Renderer::new(window, CameraCreationSettings {
-        viewport: size,
-        ..Default::default()
-    });
+    let renderer = Renderer::new(
+        window,
+        CameraCreationSettings {
+            viewport: size,
+            ..Default::default()
+        },
+    );
 
     let renderer = pollster::block_on(renderer).unwrap();
 
@@ -33,23 +36,33 @@ pub fn update_cameras(cameras: Query<(&mut Camera, &Transform)>, mut renderer: R
             }
 
             if transform.dirty() {
-                render_camera.update_view(&transform.position(), &transform.orientation(), &transform.scale());
+                render_camera.update_view(
+                    &transform.position(),
+                    &transform.orientation(),
+                    &transform.scale(),
+                );
             }
-
         });
 }
 
-pub fn update_lights(point_lights: Query<(&mut PointLight, &Transform)>, spot_lights: Query<(&mut SpotLight, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn update_lights(
+    point_lights: Query<(&mut PointLight, &Transform)>,
+    spot_lights: Query<(&mut SpotLight, &Transform)>,
+    mut renderer: ResMut<Renderer>,
+) {
     let lights = renderer.lighting_mut();
     point_lights
         .iter()
         .filter(|(light, transform)| light.dirty || transform.dirty())
         .for_each(|(light, transform)| {
-            lights.update_point_light(light.id, lighting::PointLight {
-                position: transform.position(),
-                color: light.color,
-                intensity: light.intensity,
-            });
+            lights.update_point_light(
+                light.id,
+                lighting::PointLight {
+                    position: transform.position(),
+                    color: light.color,
+                    intensity: light.intensity,
+                },
+            );
 
             light.dirty = false;
         });
@@ -58,35 +71,57 @@ pub fn update_lights(point_lights: Query<(&mut PointLight, &Transform)>, spot_li
         .iter()
         .filter(|(light, transform)| light.dirty || transform.dirty())
         .for_each(|(light, transform)| {
-            lights.update_spot_light(light.id, lighting::SpotLight {
-                position: transform.position(),
-                color: light.color,
-                intensity: light.intensity,
-                direction: transform.orientation().forward(),
-                outer: light.outer,
-                inner: light.inner,
-            });
-            
+            lights.update_spot_light(
+                light.id,
+                lighting::SpotLight {
+                    position: transform.position(),
+                    color: light.color,
+                    intensity: light.intensity,
+                    direction: transform.orientation().forward(),
+                    outer: light.outer,
+                    inner: light.inner,
+                },
+            );
+
             light.dirty = false;
         });
 }
 
-pub fn update_instances(query: Query<(&mut Mesh, &Material, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn update_instances(
+    query: Query<(&mut Mesh, &Material, &Transform)>,
+    mut renderer: ResMut<Renderer>,
+) {
     query
         .iter()
         .filter(|(mesh, _, transform)| (transform.dirty() || mesh.dirty) && mesh.instance.is_some())
         .for_each(|(mesh, material, transform)| {
             let geometry = renderer.geometry_mut(mesh.geometry);
-            geometry.update_instance(material.material, mesh.instance.unwrap(), transform.position(), transform.orientation(), transform.scale());
+            geometry.update_instance(
+                material.material,
+                mesh.instance.unwrap(),
+                transform.position(),
+                transform.orientation(),
+                transform.scale(),
+            );
             mesh.dirty = false;
         });
 }
 
-pub fn create_geometries(instances: Query<(&mut Mesh, &Material, &Transform)>, mut renderer: ResMut<Renderer>) {
+pub fn create_geometries(
+    instances: Query<(&mut Mesh, &Material, &Transform)>,
+    mut renderer: ResMut<Renderer>,
+) {
     instances
         .iter()
         .filter(|(mesh, _, _)| mesh.instance.is_none())
         .for_each(|(mesh, material, transform)| {
-            mesh.instance = Some(renderer.instantiate_geometry(mesh.geometry, material.material, material.instance, transform.position(), transform.orientation(), transform.scale()));
+            mesh.instance = Some(renderer.instantiate_geometry(
+                mesh.geometry,
+                material.material,
+                material.instance,
+                transform.position(),
+                transform.orientation(),
+                transform.scale(),
+            ));
         });
 }

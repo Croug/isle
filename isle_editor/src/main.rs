@@ -1,9 +1,26 @@
-use std::{f32::consts::PI, path::PathBuf, str::FromStr, time::{Instant, UNIX_EPOCH}};
+use std::{
+    f32::consts::PI,
+    path::PathBuf,
+    str::FromStr,
+    time::{Instant, UNIX_EPOCH},
+};
 
-use geode::{camera::CameraCreationSettings, geometry::Geometry, material, plugin::components::{Camera, Material, Mesh}, renderer::{self, Renderer}, texture::Texture};
+use geode::{
+    camera::CameraCreationSettings,
+    geometry::Geometry,
+    material,
+    plugin::components::{Camera, Material, Mesh},
+    renderer::{self, Renderer},
+    texture::Texture,
+};
 use isle::{isle_engine::flow::stages, prelude::*};
 use isle_ecs::command::WorldCommand;
-use isle_engine::{input::{define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping}, params::{Event, EventTrigger, Input, InputAxis}};
+use isle_engine::{
+    input::{
+        define_axis_binding, define_binding, Axis, AxisMapping, Button, InputMap, Key, Mapping,
+    },
+    params::{Event, EventTrigger, Input, InputAxis},
+};
 use isle_math::vector::d3::Vec3;
 
 struct MyResource(pub usize);
@@ -21,9 +38,7 @@ struct MyComponentThree;
 struct MyComponentFour;
 
 fn main() {
-    let mut flow = Flow::new()
-        .with_default_plugins()
-        .build();
+    let mut flow = Flow::new().with_default_plugins().build();
 
     flow.add_resource(false);
 
@@ -206,7 +221,7 @@ fn my_input_system(input: Input<MyMapping>, input_axis: InputAxis<MyAxisMapping>
     if input.state() {
         println!("Input detected!");
     }
-    
+
     println!("Axis value: {}", input_axis.value());
 }
 
@@ -222,7 +237,7 @@ fn my_fake_input(mut input: ResMut<InputMap>, counter: Res<MyResource>) {
         15 => input.set_button(Button::North, true),
         20 => input.set_button(Button::North, false),
         25 => panic!("Exiting"),
-        _ => ()
+        _ => (),
     }
     input.set_axis(Axis::LeftStickX, STEP * (counter as f32).sin());
 }

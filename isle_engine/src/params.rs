@@ -1,9 +1,10 @@
-use std::{
-    cell::UnsafeCell, collections::HashSet, fmt::Debug, ops::Deref, time::Instant
-};
+use std::{cell::UnsafeCell, collections::HashSet, fmt::Debug, ops::Deref, time::Instant};
 
 use isle_ecs::{
-    ecs::{BorrowSignature, RefType, SystemParam}, entity::Entity, query::QueryParam, world::{self, World}
+    ecs::{BorrowSignature, RefType, SystemParam},
+    entity::Entity,
+    query::QueryParam,
+    world::{self, World},
 };
 
 use isle_event::{EventReader, EventWriter};
@@ -65,7 +66,7 @@ impl<T: Mapping + 'static> SystemParam for Input<T> {
     fn from_world<'w>(
         world: &'w std::cell::UnsafeCell<world::World>,
         state: &'w mut Self::State,
-        _: &str
+        _: &str,
     ) -> Self::Item<'w> {
         let input_map = unsafe { &*world.get() }.get_resource::<InputMap>().unwrap();
         let input_state = T::get(input_map);
@@ -141,7 +142,11 @@ impl SystemParam for Tick {
     fn init_state(_: &std::cell::UnsafeCell<isle_ecs::world::World>) -> Self::State {
         Instant::now()
     }
-    fn from_world<'w>(_: &'w std::cell::UnsafeCell<world::World>, state: &'w mut Self::State, _: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        _: &'w std::cell::UnsafeCell<world::World>,
+        state: &'w mut Self::State,
+        _: &str,
+    ) -> Self::Item<'w> {
         let delta = state.elapsed().as_secs_f32();
         *state = Instant::now();
 
@@ -244,9 +249,7 @@ impl Lookup<'_> {
         let mut type_set = HashSet::<BorrowSignature>::default();
         T::get_components(&mut type_set);
 
-        let type_set = type_set
-            .iter()
-            .map(|x| x.0).collect();
+        let type_set = type_set.iter().map(|x| x.0).collect();
 
         let world = unsafe { &*self.world.get() };
         let components = world.get_entity_components(&entity);
@@ -262,7 +265,11 @@ impl SystemParam for Lookup<'_> {
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
     fn collect_types(_: &mut impl isle_ecs::prelude::TypeSet) {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &'w mut Self::State, _: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        _: &'w mut Self::State,
+        _: &str,
+    ) -> Self::Item<'w> {
         Lookup { world }
     }
 }

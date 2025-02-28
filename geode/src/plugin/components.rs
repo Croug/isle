@@ -49,10 +49,7 @@ pub struct Material {
 
 impl Material {
     pub fn new(material: usize, instance: usize) -> Self {
-        Material {
-            material,
-            instance,
-        }
+        Material { material, instance }
     }
 }
 

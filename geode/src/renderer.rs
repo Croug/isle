@@ -3,7 +3,13 @@ use std::vec;
 use isle_math::vector::d2::Vec2;
 use wgpu::VertexBufferLayout;
 
-use crate::{camera::{Camera, CameraCreationSettings}, geometry::Geometry, lighting::Lighting, material::{IntoBindGroup, Material}, texture::{Texture, TextureId}};
+use crate::{
+    camera::{Camera, CameraCreationSettings},
+    geometry::Geometry,
+    lighting::Lighting,
+    material::{IntoBindGroup, Material},
+    texture::{Texture, TextureId},
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -50,7 +56,10 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    pub async fn new(window: impl Into<wgpu::SurfaceTarget<'a>> + Copy, camera_settings: CameraCreationSettings) -> Result<Self, wgpu::CreateSurfaceError> {
+    pub async fn new(
+        window: impl Into<wgpu::SurfaceTarget<'a>> + Copy,
+        camera_settings: CameraCreationSettings,
+    ) -> Result<Self, wgpu::CreateSurfaceError> {
         let size = camera_settings.viewport;
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
@@ -102,7 +111,8 @@ impl<'a> Renderer<'a> {
 
         let camera_bind_group_layout = Camera::bind_group_layout(&device);
         let lighting = Lighting::new(&device, Default::default());
-        let intermediate_texture = Texture::create_camera_texture(size, &device, "Intermediate Camera texture", true);
+        let intermediate_texture =
+            Texture::create_camera_texture(size, &device, "Intermediate Camera texture", true);
 
         let mut out = Self {
             surface,
@@ -128,7 +138,7 @@ impl<'a> Renderer<'a> {
             &CameraCreationSettings {
                 label: "Main Camera",
                 ..camera_settings
-            }
+            },
         );
 
         out.cameras.push(main_camera);
@@ -213,22 +223,24 @@ impl<'a> Renderer<'a> {
             self.size = new_size;
             self.config.width = new_size.0 as u32;
             self.config.height = new_size.1 as u32;
-            
+
             let camera = self.main_camera_mut();
             camera.viewport = new_size;
             let znear = camera.znear;
             let zfar = camera.zfar;
             let projection = camera.projection;
             camera.update_projection(znear, zfar, projection);
-            self.cameras[self.main_camera].depth_texture =
-                Texture::create_depth_texture(&self.device, Vec2(self.config.width as f32, self.config.height as f32));
+            self.cameras[self.main_camera].depth_texture = Texture::create_depth_texture(
+                &self.device,
+                Vec2(self.config.width as f32, self.config.height as f32),
+            );
             self.surface.configure(&self.device, &self.config);
         }
     }
 
     fn iter_cameras(&self) -> impl Iterator<Item = (usize, &Camera)> {
-        let main_camera =
-            self.cameras
+        let main_camera = self
+            .cameras
             .get(self.main_camera)
             .map(|c| (self.main_camera, c));
 
@@ -277,39 +289,46 @@ impl<'a> Renderer<'a> {
                 label: Some("Render Encoder"),
             });
 
-        self.iter_cameras()
-            .for_each(|(camera_id, camera)| {
-                let camera_view = self.texture(camera.texture_id).view();
-                let intermediate_view = self.intermediate_texture.view();
-                let (view, surface_view) = if camera_id == self.main_camera {
-                    (intermediate_view, Some(&view))
-                } else {
-                    (camera_view, None)
-                };
-                let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_view);
+        self.iter_cameras().for_each(|(camera_id, camera)| {
+            let camera_view = self.texture(camera.texture_id).view();
+            let intermediate_view = self.intermediate_texture.view();
+            let (view, surface_view) = if camera_id == self.main_camera {
+                (intermediate_view, Some(&view))
+            } else {
+                (camera_view, None)
+            };
+            let mut render_pass = camera.begin_render_pass(&mut encoder, view, surface_view);
 
-                self.lighting.update_buffer(&self.queue);
-                render_pass.set_bind_group(0, &self.lighting.bind_group, &[]);
+            self.lighting.update_buffer(&self.queue);
+            render_pass.set_bind_group(0, &self.lighting.bind_group, &[]);
 
-                camera.update_buffer(&self.queue);
-                render_pass.set_bind_group(1, &camera.bind_group, &[]);
+            camera.update_buffer(&self.queue);
+            render_pass.set_bind_group(1, &camera.bind_group, &[]);
 
-                self.materials
-                    .iter()
-                    .enumerate()
-                    .for_each(|(material_id, material)| {
-                        if camera_id == self.main_camera {
-                            render_pass.set_pipeline(&material.main_camera_pipeline);
-                        } else {
-                            render_pass.set_pipeline(&material.standard_pipeline);
-                        }
+            self.materials
+                .iter()
+                .enumerate()
+                .for_each(|(material_id, material)| {
+                    if camera_id == self.main_camera {
+                        render_pass.set_pipeline(&material.main_camera_pipeline);
+                    } else {
+                        render_pass.set_pipeline(&material.standard_pipeline);
+                    }
 
-                        material.instances.iter().enumerate().for_each(|(instance_id, instance)| {
+                    material
+                        .instances
+                        .iter()
+                        .enumerate()
+                        .for_each(|(instance_id, instance)| {
                             render_pass.set_bind_group(2, &instance.bind_group, &[]);
-                            self.render_geometries_by_material(material_id, instance_id, &mut render_pass);
+                            self.render_geometries_by_material(
+                                material_id,
+                                instance_id,
+                                &mut render_pass,
+                            );
                         });
-                    })
-            });
+                })
+        });
 
         let main_camera_texture = self.main_camera().texture_id;
         let main_camera_texture = self.texture(main_camera_texture);
@@ -350,18 +369,46 @@ impl<'a> Renderer<'a> {
         self.textures.push(texture);
         TextureId(self.textures.len() - 1)
     }
-    
+
     pub fn add_geometry(&mut self, geometry: Geometry) -> usize {
         self.geometries.push(geometry);
         self.geometries.len() - 1
     }
 
-    pub fn instantiate_geometry(&mut self, geometry_id: usize, material_id: usize, material_instance_id: usize, translation: isle_math::vector::d3::Vec3, rotation: isle_math::rotation::Rotation, scale: isle_math::vector::d3::Vec3) -> usize {
-        self.geometries[geometry_id].instantiate(material_id, material_instance_id, translation, rotation, scale)
+    pub fn instantiate_geometry(
+        &mut self,
+        geometry_id: usize,
+        material_id: usize,
+        material_instance_id: usize,
+        translation: isle_math::vector::d3::Vec3,
+        rotation: isle_math::rotation::Rotation,
+        scale: isle_math::vector::d3::Vec3,
+    ) -> usize {
+        self.geometries[geometry_id].instantiate(
+            material_id,
+            material_instance_id,
+            translation,
+            rotation,
+            scale,
+        )
     }
 
-    pub fn update_geometry_instance(&mut self, geometry_id: usize, material_id: usize, instance_id: usize, translation: isle_math::vector::d3::Vec3, rotation: isle_math::rotation::Rotation, scale: isle_math::vector::d3::Vec3) {
-        self.geometries[geometry_id].update_instance(material_id, instance_id, translation, rotation, scale);
+    pub fn update_geometry_instance(
+        &mut self,
+        geometry_id: usize,
+        material_id: usize,
+        instance_id: usize,
+        translation: isle_math::vector::d3::Vec3,
+        rotation: isle_math::rotation::Rotation,
+        scale: isle_math::vector::d3::Vec3,
+    ) {
+        self.geometries[geometry_id].update_instance(
+            material_id,
+            instance_id,
+            translation,
+            rotation,
+            scale,
+        );
     }
 
     pub fn add_material(&mut self, material: Material) -> usize {
@@ -369,7 +416,12 @@ impl<'a> Renderer<'a> {
         self.materials.len() - 1
     }
 
-    pub fn instantiate_material(&mut self, material_id: usize, label: &'static str, entries: &dyn IntoBindGroup) -> usize {
+    pub fn instantiate_material(
+        &mut self,
+        material_id: usize,
+        label: &'static str,
+        entries: &dyn IntoBindGroup,
+    ) -> usize {
         Material::instantiate(self, material_id, entries, label)
     }
 }

@@ -57,7 +57,11 @@ impl SystemSet {
             systems: Vec::new(),
         }
     }
-    pub fn add_system<I, S: System + 'static>(&mut self, system: impl IntoSystem<I, System = S>, world: &UnsafeCell<World>) {
+    pub fn add_system<I, S: System + 'static>(
+        &mut self,
+        system: impl IntoSystem<I, System = S>,
+        world: &UnsafeCell<World>,
+    ) {
         self.systems.push(Box::new(system.into_system(world)));
     }
     pub fn get_system_ids(&self) -> Vec<usize> {
@@ -99,7 +103,11 @@ pub trait SystemParam {
     type Item<'new>;
 
     fn init_state(world: &UnsafeCell<World>) -> Self::State;
-    fn from_world<'w>(world: &'w UnsafeCell<World>, state: &'w mut Self::State, system_info: &str) -> Self::Item<'w>;
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        state: &'w mut Self::State,
+        system_info: &str,
+    ) -> Self::Item<'w>;
     fn collect_types(types: &mut impl TypeSet);
 }
 
@@ -119,7 +127,11 @@ impl<'a, T> SystemParam for Res<'a, T> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        _: &mut Self::State,
+        system_info: &str,
+    ) -> Self::Item<'w> {
         let world = unsafe { &*world.get() };
         Res(world.get_resource::<T>().unwrap_or_else(||{
             panic!("Invalid system construction for type {}\nResource {} not found in world\nHint: try wrapping Res declaration in Option<>", system_info, type_name::<T>());
@@ -153,11 +165,17 @@ impl<'a, T: 'static> SystemParam for ResMut<'a, T> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        _: &mut Self::State,
+        system_info: &str,
+    ) -> Self::Item<'w> {
         let world = unsafe { &mut *world.get() };
-        ResMut(unsafe { world.get_resource_mut::<T>().unwrap_or_else(||{
+        ResMut(unsafe {
+            world.get_resource_mut::<T>().unwrap_or_else(||{
             panic!("Invalid system construction for type {}\nResource {} not found in world\nHint: try wrapping Res declaration in Option<>", system_info, type_name::<T>());
-        }) })
+        })
+        })
     }
 
     fn collect_types(types: &mut impl TypeSet) {
@@ -171,7 +189,11 @@ impl<'a, T: 'static> SystemParam for Option<Res<'a, T>> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, system_info: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        _: &mut Self::State,
+        system_info: &str,
+    ) -> Self::Item<'w> {
         let world = unsafe { &*world.get() };
         world.get_resource::<T>().map(Res)
     }
@@ -187,7 +209,11 @@ impl<'a, T: 'static> SystemParam for Option<ResMut<'a, T>> {
 
     fn init_state(_: &UnsafeCell<World>) -> Self::State {}
 
-    fn from_world<'w>(world: &'w UnsafeCell<World>, _: &mut Self::State, _: &str) -> Self::Item<'w> {
+    fn from_world<'w>(
+        world: &'w UnsafeCell<World>,
+        _: &mut Self::State,
+        _: &str,
+    ) -> Self::Item<'w> {
         let world = unsafe { &mut *world.get() };
         unsafe { world.get_resource_mut::<T>().map(ResMut) }
     }

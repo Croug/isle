@@ -61,7 +61,7 @@ pub mod quaternion {
             } else {
                 let angle = dot.acos();
                 let axis = Vec3::FORWARD.cross(&forward).norm();
-                
+
                 Self::from_axis_angle(axis, angle)
             }
         }
@@ -99,9 +99,9 @@ pub mod quaternion {
             let [[a, b, c], [d, e, f], [g, h, i]] = self.to_mat3().0;
 
             Matrix([
-                [a, b, c, 0.0], // Column 0
-                [d, e, f, 0.0], // Column 1
-                [g, h, i, 0.0], // Column 2
+                [a, b, c, 0.0],       // Column 0
+                [d, e, f, 0.0],       // Column 1
+                [g, h, i, 0.0],       // Column 2
                 [0.0, 0.0, 0.0, 1.0], // Column 3
             ])
         }
@@ -109,7 +109,7 @@ pub mod quaternion {
 
     impl Mul for Quaternion {
         type Output = Self;
-        
+
         fn mul(self, rhs: Self) -> Self::Output {
             Quaternion(
                 self.0 * rhs.0 - self.1 * rhs.1 - self.2 * rhs.2 - self.3 * rhs.3,
@@ -232,13 +232,11 @@ impl Rotation {
     pub fn to_euler(&self) -> Vec3 {
         match self {
             Self::Euler(euler) => *euler,
-            Self::Quaternion(Quaternion(w, i, j, k)) => {
-                Vec3(
-                    (2. * (w * i + j * k)).atan2(w*w - i*i - j*j + k*k),
-                    (2. * (w * j - i * k)).asin(),
-                    (2. * (w * k + i * j)).atan2(w*w + i*i - j*j - k*k),
-                )
-            }
+            Self::Quaternion(Quaternion(w, i, j, k)) => Vec3(
+                (2. * (w * i + j * k)).atan2(w * w - i * i - j * j + k * k),
+                (2. * (w * j - i * k)).asin(),
+                (2. * (w * k + i * j)).atan2(w * w + i * i - j * j - k * k),
+            ),
         }
     }
 

@@ -144,28 +144,28 @@ impl Mat4 {
         // Cofactor matrix
         let cofactors = Matrix([
             [
-            f * (k * p - o * l) - g * (j * p - n * l) + h * (j * o - n * k),
-            -(e * (k * p - o * l) - g * (i * p - m * l) + h * (i * o - m * k)),
-            e * (j * p - n * l) - f * (i * p - m * l) + h * (i * n - m * j),
-            -(e * (j * o - n * k) - f * (i * o - m * k) + g * (i * n - m * j)),
+                f * (k * p - o * l) - g * (j * p - n * l) + h * (j * o - n * k),
+                -(e * (k * p - o * l) - g * (i * p - m * l) + h * (i * o - m * k)),
+                e * (j * p - n * l) - f * (i * p - m * l) + h * (i * n - m * j),
+                -(e * (j * o - n * k) - f * (i * o - m * k) + g * (i * n - m * j)),
             ],
             [
-            -(b * (k * p - o * l) - c * (j * p - n * l) + d * (j * o - n * k)),
-            a * (k * p - o * l) - c * (i * p - m * l) + d * (i * o - m * k),
-            -(a * (j * p - n * l) - b * (i * p - m * l) + d * (i * n - m * j)),
-            a * (j * o - n * k) - b * (i * o - m * k) + c * (i * n - m * j),
+                -(b * (k * p - o * l) - c * (j * p - n * l) + d * (j * o - n * k)),
+                a * (k * p - o * l) - c * (i * p - m * l) + d * (i * o - m * k),
+                -(a * (j * p - n * l) - b * (i * p - m * l) + d * (i * n - m * j)),
+                a * (j * o - n * k) - b * (i * o - m * k) + c * (i * n - m * j),
             ],
             [
-            b * (g * p - o * h) - c * (f * p - n * h) + d * (f * o - n * g),
-            -(a * (g * p - o * h) - c * (e * p - m * h) + d * (e * o - m * g)),
-            a * (f * p - n * h) - b * (e * p - m * h) + d * (e * n - m * f),
-            -(a * (f * o - n * g) - b * (e * o - m * g) + c * (e * n - m * f)),
+                b * (g * p - o * h) - c * (f * p - n * h) + d * (f * o - n * g),
+                -(a * (g * p - o * h) - c * (e * p - m * h) + d * (e * o - m * g)),
+                a * (f * p - n * h) - b * (e * p - m * h) + d * (e * n - m * f),
+                -(a * (f * o - n * g) - b * (e * o - m * g) + c * (e * n - m * f)),
             ],
             [
-            -(b * (g * l - k * h) - c * (f * l - j * h) + d * (f * k - j * g)),
-            a * (g * l - k * h) - c * (e * l - i * h) + d * (e * k - i * g),
-            -(a * (f * l - j * h) - b * (e * l - i * h) + d * (e * j - i * f)),
-            a * (f * k - j * g) - b * (e * k - i * g) + c * (e * j - i * f),
+                -(b * (g * l - k * h) - c * (f * l - j * h) + d * (f * k - j * g)),
+                a * (g * l - k * h) - c * (e * l - i * h) + d * (e * k - i * g),
+                -(a * (f * l - j * h) - b * (e * l - i * h) + d * (e * j - i * f)),
+                a * (f * k - j * g) - b * (e * k - i * g) + c * (e * j - i * f),
             ],
         ]);
 
@@ -189,11 +189,7 @@ impl Mat3 {
     pub fn to_align_4(&self) -> [[f32; 4]; 3] {
         let [[a, b, c], [d, e, f], [g, h, i]] = self.0;
 
-        [
-            [a, b, c, 0.0],
-            [d, e, f, 0.0],
-            [g, h, i, 0.0],
-        ]
+        [[a, b, c, 0.0], [d, e, f, 0.0], [g, h, i, 0.0]]
     }
     pub fn normal(transform: &Mat4) -> Option<Self> {
         Some(transform.normal()?.into())
@@ -218,7 +214,7 @@ impl<const C: usize, const R: usize, const U: usize> Mul<Matrix<C, U>> for Matri
     }
 }
 
-impl<const C: usize, const R: usize> Mul<f32> for Matrix<C,R> {
+impl<const C: usize, const R: usize> Mul<f32> for Matrix<C, R> {
     type Output = Matrix<C, R>;
 
     fn mul(self, rhs: f32) -> Self::Output {
@@ -238,10 +234,7 @@ impl Into<Mat2> for Mat3 {
     fn into(self) -> Mat2 {
         let [[a, b, _], [c, d, _], _] = self.0;
 
-        Matrix([
-            [a, b],
-            [c, d],
-        ])
+        Matrix([[a, b], [c, d]])
     }
 }
 
@@ -249,14 +242,9 @@ impl Into<Mat3> for Mat4 {
     fn into(self) -> Mat3 {
         let [[a, b, c, _], [d, e, f, _], [g, h, i, _], _] = self.0;
 
-        Matrix([
-            [a, b, c],
-            [d, e, f],
-            [g, h, i],
-        ])
+        Matrix([[a, b, c], [d, e, f], [g, h, i]])
     }
 }
-
 
 impl Mul<Vec4> for Mat4 {
     type Output = Matrix<1, 4>;

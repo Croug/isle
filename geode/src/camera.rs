@@ -7,7 +7,10 @@ use isle_math::{
 };
 use wgpu::util::DeviceExt;
 
-use crate::{renderer::Renderer, texture::{Texture, TextureId}};
+use crate::{
+    renderer::Renderer,
+    texture::{Texture, TextureId},
+};
 
 pub struct Camera {
     pub(crate) texture_id: TextureId,
@@ -73,26 +76,45 @@ impl Default for CameraCreationSettings {
             scale: Vec3::IDENTITY,
             znear: 10.0,
             zfar: 100000.0,
-            projection: CameraProjection::Perspective {
-                fovy: 60.0,
-            },
+            projection: CameraProjection::Perspective { fovy: 60.0 },
         }
     }
 }
 
 impl Camera {
     pub fn new(renderer: &mut Renderer, settings: &CameraCreationSettings) -> Self {
-        let texture = Texture::create_camera_texture(settings.viewport, renderer.device(), settings.label, false);
+        let texture = Texture::create_camera_texture(
+            settings.viewport,
+            renderer.device(),
+            settings.label,
+            false,
+        );
         let texture_id = renderer.add_texture(texture);
         let depth_texture = Texture::create_depth_texture(renderer.device(), settings.viewport);
 
-        let view = Mat4::inverse_transform(settings.scale, &settings.orientation, settings.position);
+        let view =
+            Mat4::inverse_transform(settings.scale, &settings.orientation, settings.position);
         let projection_mat = match settings.projection {
-            CameraProjection::Perspective { fovy } =>
-                Mat4::perspective_projection(settings.viewport.0 / settings.viewport.1, Angle::Degrees(fovy), settings.znear, settings.zfar),
+            CameraProjection::Perspective { fovy } => Mat4::perspective_projection(
+                settings.viewport.0 / settings.viewport.1,
+                Angle::Degrees(fovy),
+                settings.znear,
+                settings.zfar,
+            ),
 
-            CameraProjection::Orthographic { left, right, bottom, top } =>
-                Mat4::orthographic_projection(left, right, bottom, top, settings.znear, settings.zfar),
+            CameraProjection::Orthographic {
+                left,
+                right,
+                bottom,
+                top,
+            } => Mat4::orthographic_projection(
+                left,
+                right,
+                bottom,
+                top,
+                settings.znear,
+                settings.zfar,
+            ),
 
             CameraProjection::None => Mat4::identity(),
         };
@@ -103,26 +125,24 @@ impl Camera {
             _padding: 0.0,
         };
 
-        let buffer = renderer.device().create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let buffer = renderer
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(format!("{} Buffer", settings.label).as_str()),
                 contents: bytemuck::cast_slice(&[camera_uniform]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+            });
 
-        let bind_group = renderer.device().create_bind_group(
-            &wgpu::BindGroupDescriptor {
+        let bind_group = renderer
+            .device()
+            .create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: renderer.camera_bind_group_layout(),
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: buffer.as_entire_binding(),
-                    },
-                ],
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
                 label: Some(format!("{} Bind Group", settings.label).as_str()),
-            }
-        );
+            });
 
         Self {
             texture_id,
@@ -169,15 +189,13 @@ impl Camera {
         view: &wgpu::TextureView,
         surface_view: Option<&wgpu::TextureView>,
     ) -> wgpu::RenderPass {
-        let surface_view = surface_view.map(|view| {
-            wgpu::RenderPassColorAttachment {
-                view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(self.clear_color),
-                    store: wgpu::StoreOp::Store,
-                },
-            }
+        let surface_view = surface_view.map(|view| wgpu::RenderPassColorAttachment {
+            view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(self.clear_color),
+                store: wgpu::StoreOp::Store,
+            },
         });
         let end = surface_view.is_some() as usize + 1;
         let attachments = [
@@ -221,11 +239,19 @@ impl Camera {
 
     pub fn update_projection(&mut self, znear: f32, zfar: f32, projection: CameraProjection) {
         self.projection_mat = match projection {
-            CameraProjection::Perspective { fovy} =>
-                Mat4::perspective_projection(self.viewport.0 / self.viewport.1, Angle::Degrees(fovy), znear, zfar),
+            CameraProjection::Perspective { fovy } => Mat4::perspective_projection(
+                self.viewport.0 / self.viewport.1,
+                Angle::Degrees(fovy),
+                znear,
+                zfar,
+            ),
 
-            CameraProjection::Orthographic { left, right, bottom, top } =>
-                Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
+            CameraProjection::Orthographic {
+                left,
+                right,
+                bottom,
+                top,
+            } => Mat4::orthographic_projection(left, right, bottom, top, znear, zfar),
 
             CameraProjection::None => Mat4::identity(),
         };

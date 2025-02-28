@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashSet, sync::mpsc::{Receiver, Sender},
+    collections::HashSet,
+    sync::mpsc::{Receiver, Sender},
 };
 
 type EntityEvents = EventWriter<EntityEvent>;

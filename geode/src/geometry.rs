@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use isle_math::{
-    matrix::{Mat3, Mat4}, rotation::Rotation, vector::{d2::Vec2, d3::Vec3}
+    matrix::{Mat3, Mat4},
+    rotation::Rotation,
+    vector::{d2::Vec2, d3::Vec3},
 };
 use rustc_hash::FxHashMap;
 use tobj::{load_obj, LoadError, LoadOptions};
@@ -35,15 +37,31 @@ impl From<tobj::Mesh> for Mesh {
         let num_uvs = value.texcoords.len() / 2;
         let num_normals = value.normals.len() / 3;
 
-        assert_eq!(num_positions, num_uvs, "Number of positions and uvs must match\nVertices: {num_positions}\nUVs: {num_uvs}");
+        assert_eq!(
+            num_positions, num_uvs,
+            "Number of positions and uvs must match\nVertices: {num_positions}\nUVs: {num_uvs}"
+        );
         assert_eq!(num_positions, num_normals, "Number of positions and normals must match\nVertices: {num_positions}\nNormals: {num_normals}");
-
 
         Self {
             geometry_type: GeometryType::Tris(value.indices),
-            vertices: value.positions.chunks_exact(3).map(|v| Vec3(v[0], v[1], v[2])).collect(),
-            uvs: value.texcoords.chunks_exact(2).map(|v| Vec2(v[0], v[1])).collect(),
-            normals: Some(value.normals.chunks_exact(3).map(|v| Vec3(v[0], v[1], v[2])).collect()),
+            vertices: value
+                .positions
+                .chunks_exact(3)
+                .map(|v| Vec3(v[0], v[1], v[2]))
+                .collect(),
+            uvs: value
+                .texcoords
+                .chunks_exact(2)
+                .map(|v| Vec2(v[0], v[1]))
+                .collect(),
+            normals: Some(
+                value
+                    .normals
+                    .chunks_exact(3)
+                    .map(|v| Vec3(v[0], v[1], v[2]))
+                    .collect(),
+            ),
         }
     }
 }
@@ -70,7 +88,11 @@ impl Geometry {
     pub fn instance(&self, material_id: usize, instance_id: usize) -> Option<&GeometryInstance> {
         self.instances.get(&material_id)?.get(instance_id)
     }
-    pub fn instance_mut(&mut self, material_id: usize, instance_id: usize) -> Option<&mut GeometryInstance> {
+    pub fn instance_mut(
+        &mut self,
+        material_id: usize,
+        instance_id: usize,
+    ) -> Option<&mut GeometryInstance> {
         self.instances.get_mut(&material_id)?.get_mut(instance_id)
     }
     pub(crate) fn vertices(&self) -> Vec<Vertex> {
@@ -96,8 +118,15 @@ impl Geometry {
             panic!("Geometry not loaded into GPU memory")
         }
     }
-    pub fn instance_buffer(&self, material_id: usize, instance_id: usize, device: &wgpu::Device) -> wgpu::Buffer {
-        let data = self.instances.get(&material_id)
+    pub fn instance_buffer(
+        &self,
+        material_id: usize,
+        instance_id: usize,
+        device: &wgpu::Device,
+    ) -> wgpu::Buffer {
+        let data = self
+            .instances
+            .get(&material_id)
             .unwrap()
             .iter()
             .filter(|instance| instance.instance_id == instance_id)
@@ -131,7 +160,9 @@ impl Geometry {
     }
     pub fn num_instances(&self, material_id: usize, instance_id: usize) -> usize {
         let empty = Vec::new();
-        self.instances.get(&material_id).unwrap_or(&empty)
+        self.instances
+            .get(&material_id)
+            .unwrap_or(&empty)
             .iter()
             .filter(|instance| instance.instance_id == instance_id)
             .count()
@@ -162,12 +193,15 @@ impl Geometry {
             return Ok(());
         };
 
-        let (mut models, _) = load_obj(path, &LoadOptions {
-            single_index: true,
-            triangulate: true,
-            ignore_lines: true,
-            ignore_points: true,
-        })?;
+        let (mut models, _) = load_obj(
+            path,
+            &LoadOptions {
+                single_index: true,
+                triangulate: true,
+                ignore_lines: true,
+                ignore_points: true,
+            },
+        )?;
 
         let model = models.remove(0);
 
@@ -241,12 +275,7 @@ impl Geometry {
             Vec3(half_size.0, 0.0, half_size.1),
             Vec3(-half_size.0, 0.0, half_size.1),
         ];
-        let normals = vec![
-            Vec3::UP,
-            Vec3::UP,
-            Vec3::UP,
-            Vec3::UP,
-        ];
+        let normals = vec![Vec3::UP, Vec3::UP, Vec3::UP, Vec3::UP];
         let uvs = vec![
             Vec2(0.0, 1.0),
             Vec2(1.0, 1.0),
@@ -275,31 +304,26 @@ impl Geometry {
             Vec3(half_size.0, half_size.1, -half_size.2),
             Vec3(half_size.0, half_size.1, half_size.2),
             Vec3(-half_size.0, half_size.1, half_size.2),
-
             // Bottom
             Vec3(-half_size.0, -half_size.1, -half_size.2),
             Vec3(-half_size.0, -half_size.1, half_size.2),
             Vec3(half_size.0, -half_size.1, half_size.2),
             Vec3(half_size.0, -half_size.1, -half_size.2),
-
             // Right
             Vec3(half_size.0, -half_size.1, -half_size.2),
             Vec3(half_size.0, -half_size.1, half_size.2),
             Vec3(half_size.0, half_size.1, half_size.2),
             Vec3(half_size.0, half_size.1, -half_size.2),
-
             // Left
             Vec3(-half_size.0, -half_size.1, -half_size.2),
             Vec3(-half_size.0, half_size.1, -half_size.2),
             Vec3(-half_size.0, half_size.1, half_size.2),
             Vec3(-half_size.0, -half_size.1, half_size.2),
-
             // Front
             Vec3(-half_size.0, -half_size.1, -half_size.2),
             Vec3(half_size.0, -half_size.1, -half_size.2),
             Vec3(half_size.0, half_size.1, -half_size.2),
             Vec3(-half_size.0, half_size.1, -half_size.2),
-
             // Back
             Vec3(-half_size.0, -half_size.1, half_size.2),
             Vec3(-half_size.0, half_size.1, half_size.2),
@@ -312,31 +336,26 @@ impl Geometry {
             Vec3(0.0, 1.0, 0.0),
             Vec3(0.0, 1.0, 0.0),
             Vec3(0.0, 1.0, 0.0),
-
             // Bottom
             Vec3(0.0, -1.0, 0.0),
             Vec3(0.0, -1.0, 0.0),
             Vec3(0.0, -1.0, 0.0),
             Vec3(0.0, -1.0, 0.0),
-
             // Right
             Vec3(1.0, 0.0, 0.0),
             Vec3(1.0, 0.0, 0.0),
             Vec3(1.0, 0.0, 0.0),
             Vec3(1.0, 0.0, 0.0),
-
             // Left
             Vec3(-1.0, 0.0, 0.0),
             Vec3(-1.0, 0.0, 0.0),
             Vec3(-1.0, 0.0, 0.0),
             Vec3(-1.0, 0.0, 0.0),
-
             // Front
             Vec3(0.0, 0.0, -1.0),
             Vec3(0.0, 0.0, -1.0),
             Vec3(0.0, 0.0, -1.0),
             Vec3(0.0, 0.0, -1.0),
-
             // Back
             Vec3(0.0, 0.0, 1.0),
             Vec3(0.0, 0.0, 1.0),
@@ -349,31 +368,26 @@ impl Geometry {
             Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
             Vec2(0.0, 0.0),
-
             // Bottom
             Vec2(0.0, 1.0),
             Vec2(0.0, 0.0),
             Vec2(1.0, 0.0),
             Vec2(1.0, 1.0),
-
             // Right
             Vec2(0.0, 1.0),
             Vec2(0.0, 0.0),
             Vec2(1.0, 0.0),
             Vec2(1.0, 1.0),
-
             // Left
             Vec2(0.0, 1.0),
             Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
             Vec2(0.0, 0.0),
-
             // Front
             Vec2(0.0, 1.0),
             Vec2(1.0, 1.0),
             Vec2(1.0, 0.0),
             Vec2(0.0, 0.0),
-
             // Back
             Vec2(0.0, 1.0),
             Vec2(0.0, 0.0),
@@ -401,7 +415,14 @@ impl Geometry {
         }
     }
 
-    pub fn instantiate(&mut self, material_id: usize, material_instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) -> usize {
+    pub fn instantiate(
+        &mut self,
+        material_id: usize,
+        material_instance_id: usize,
+        translation: Vec3,
+        rotation: Rotation,
+        scale: Vec3,
+    ) -> usize {
         let transform = Mat4::transform(scale, &rotation, translation);
         let normal_mat = Mat3::normal(&transform).unwrap();
         self.instances
@@ -416,9 +437,17 @@ impl Geometry {
         self.instances.get(&material_id).unwrap().len() - 1
     }
 
-    pub fn update_instance(&mut self, material_id: usize, instance_id: usize, translation: Vec3, rotation: Rotation, scale: Vec3) {
+    pub fn update_instance(
+        &mut self,
+        material_id: usize,
+        instance_id: usize,
+        translation: Vec3,
+        rotation: Rotation,
+        scale: Vec3,
+    ) {
         let transform = Mat4::transform(scale, &rotation, translation);
-        self.instances.get_mut(&material_id)
+        self.instances
+            .get_mut(&material_id)
             .unwrap()
             .get_mut(instance_id)
             .unwrap()

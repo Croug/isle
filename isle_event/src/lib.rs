@@ -1,5 +1,7 @@
 use std::{
-    fmt::Debug, iter, sync::{Arc, Mutex, OnceLock}
+    fmt::Debug,
+    iter,
+    sync::{Arc, Mutex, OnceLock},
 };
 
 type NodeReference<T> = Arc<OnceLock<EventNode<T>>>;

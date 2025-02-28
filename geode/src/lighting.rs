@@ -65,33 +65,29 @@ impl Lighting {
             num_point_lights: 0,
             num_spot_lights: 0,
             _padding: [0; 2],
-        }).to_vec();
+        })
+        .to_vec();
 
-        const LIGHTS_SIZE: usize = std::mem::size_of::<PointLightRaw>() + std::mem::size_of::<SpotLightRaw>();
+        const LIGHTS_SIZE: usize =
+            std::mem::size_of::<PointLightRaw>() + std::mem::size_of::<SpotLightRaw>();
         buffer_content.extend_from_slice(&[0u8; LIGHTS_SIZE * MAX_LIGHTS]);
 
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Lighting Buffer"),
-                contents: bytemuck::cast_slice(buffer_content.as_slice()),
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Lighting Buffer"),
+            contents: bytemuck::cast_slice(buffer_content.as_slice()),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
 
         let bind_group_layout = Self::bind_group_layout(&device);
 
-        let bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: &bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: buffer.as_entire_binding(),
-                    }
-                ],
-                label: Some("Lighting Bind Group"),
-            }
-        );
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
+            label: Some("Lighting Bind Group"),
+        });
 
         Self {
             point_lights: Vec::new(),
@@ -114,15 +110,25 @@ impl Lighting {
             _padding: [0; 2],
         };
 
-        let point_lights = self.point_lights.iter().map(PointLight::to_raw).collect::<Vec<_>>();
+        let point_lights = self
+            .point_lights
+            .iter()
+            .map(PointLight::to_raw)
+            .collect::<Vec<_>>();
         let mut buffer = bytemuck::bytes_of(&[raw]).to_vec();
         buffer.extend_from_slice(bytemuck::cast_slice(&point_lights));
-        let padding_size = std::mem::size_of::<PointLightRaw>() * (MAX_LIGHTS - self.point_lights.len());
+        let padding_size =
+            std::mem::size_of::<PointLightRaw>() * (MAX_LIGHTS - self.point_lights.len());
         buffer.extend_from_slice(&vec![0u8; padding_size]);
 
-        let spot_lights = self.spot_lights.iter().map(SpotLight::to_raw).collect::<Vec<_>>();
+        let spot_lights = self
+            .spot_lights
+            .iter()
+            .map(SpotLight::to_raw)
+            .collect::<Vec<_>>();
         buffer.extend_from_slice(bytemuck::cast_slice(&spot_lights));
-        let padding_size = std::mem::size_of::<SpotLightRaw>() * (MAX_LIGHTS - self.spot_lights.len());
+        let padding_size =
+            std::mem::size_of::<SpotLightRaw>() * (MAX_LIGHTS - self.spot_lights.len());
         buffer.extend_from_slice(&vec![0u8; padding_size]);
 
         buffer
@@ -166,9 +172,7 @@ impl Lighting {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage {
-                        read_only: true,
-                    },
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
@@ -200,7 +204,6 @@ impl PointLight {
             _padding0: 0,
         }
     }
-
 }
 
 impl SpotLight {

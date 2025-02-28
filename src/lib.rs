@@ -22,10 +22,9 @@ pub mod defaults {
     }
 
     #[cfg(not(feature = "geode"))]
-    fn renderer<S: Scheduler, E: Executor> (flow: FlowBuilder<S,E>) -> FlowBuilder<S,E> {
+    fn renderer<S: Scheduler, E: Executor>(flow: FlowBuilder<S, E>) -> FlowBuilder<S, E> {
         flow
     }
-
 
     pub trait DefaultPlugins {
         fn with_default_plugins(self) -> Self;

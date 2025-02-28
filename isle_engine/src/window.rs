@@ -1,7 +1,12 @@
 use std::sync::OnceLock;
 
 use isle_math::vector::d2::Vec2;
-use winit::{application::ApplicationHandler, event::{ElementState, KeyEvent, WindowEvent}, keyboard::PhysicalKey, window::{Window, WindowAttributes}};
+use winit::{
+    application::ApplicationHandler,
+    event::{ElementState, KeyEvent, WindowEvent},
+    keyboard::PhysicalKey,
+    window::{Window, WindowAttributes},
+};
 
 use crate::{executor::Executor, flow::Flow, input::Key, schedule::Scheduler};
 
@@ -16,11 +21,20 @@ pub struct KeyboardEvent {
     pub key: Key,
 }
 
-impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
+impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S, E> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        WINDOW.set(event_loop.create_window(WindowAttributes::default()).unwrap()).unwrap();
+        WINDOW
+            .set(
+                event_loop
+                    .create_window(WindowAttributes::default())
+                    .unwrap(),
+            )
+            .unwrap();
         let size = WINDOW.get().unwrap().inner_size();
-        self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
+        self.send_event(ReconfigureSurface(Vec2(
+            size.width as f32,
+            size.height as f32,
+        )));
     }
 
     fn window_event(
@@ -44,24 +58,26 @@ impl<S: Scheduler, E: Executor> ApplicationHandler for Flow<S,E> {
                 event_loop.exit();
             }
             WindowEvent::Resized(size) => {
-                self.send_event(ReconfigureSurface(Vec2(size.width as f32, size.height as f32)));
+                self.send_event(ReconfigureSurface(Vec2(
+                    size.width as f32,
+                    size.height as f32,
+                )));
             }
 
             WindowEvent::KeyboardInput {
-                event: KeyEvent {
-                    state,
-                    physical_key: PhysicalKey::Code(key_code),
-                    ..
-                }, 
+                event:
+                    KeyEvent {
+                        state,
+                        physical_key: PhysicalKey::Code(key_code),
+                        ..
+                    },
                 ..
-            } => {
-                self.send_event(KeyboardEvent {
-                    state: state == ElementState::Pressed,
-                    key: key_code.into(),
-                })
-            }
+            } => self.send_event(KeyboardEvent {
+                state: state == ElementState::Pressed,
+                key: key_code.into(),
+            }),
 
-            _ => ()
+            _ => (),
         }
     }
 }

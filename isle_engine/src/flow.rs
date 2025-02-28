@@ -11,7 +11,10 @@ use isle_ecs::{
     world::World,
 };
 use isle_event::{EventReader, EventWriter};
-use winit::{error::EventLoopError, event_loop::{self, EventLoop}};
+use winit::{
+    error::EventLoopError,
+    event_loop::{self, EventLoop},
+};
 
 use crate::{executor::Executor, input::InputMap, plugin::EngineHook, schedule::Scheduler};
 
@@ -70,7 +73,11 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
             stages::PRE_RENDER,
             stages::RENDER,
             stages::POST_RENDER,
-        ].iter().copied().chain(6..num_stages).for_each(|stage| {
+        ]
+        .iter()
+        .copied()
+        .chain(6..num_stages)
+        .for_each(|stage| {
             self.run_schedule(stage);
         });
     }
@@ -124,14 +131,12 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
 
     fn get_event_writer<T: Clone + Debug + 'static>(&self) -> &EventWriter<T> {
         let world = unsafe { &*self.world.get() };
-        let writer = world
-            .get_resource::<EventWriter<T>>()
-            .unwrap_or_else(|| {
-                let world = unsafe { &mut *self.world.get() };
-                let writer = EventWriter::<T>::new();
-                world.store_resource(writer);
-                world.get_resource().unwrap()
-            });
+        let writer = world.get_resource::<EventWriter<T>>().unwrap_or_else(|| {
+            let world = unsafe { &mut *self.world.get() };
+            let writer = EventWriter::<T>::new();
+            world.store_resource(writer);
+            world.get_resource().unwrap()
+        });
         writer
     }
 
@@ -184,10 +189,16 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
     }
 
     pub fn run_once<I, T: System + 'static>(&mut self, system: impl IntoSystem<I, System = T>) {
-        self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
+        self.run_once_systems
+            .get_or_insert_with(SystemSet::new)
+            .add_system(system, &self.world);
     }
 
-    pub fn add_system<I, T: System + 'static>(&mut self, stage: usize, system: impl IntoSystem<I, System = T>) {
+    pub fn add_system<I, T: System + 'static>(
+        &mut self,
+        stage: usize,
+        system: impl IntoSystem<I, System = T>,
+    ) {
         self.system_sets[stage].add_system(system, &self.world);
     }
 
@@ -238,17 +249,29 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
     pub fn with_plugin<P: FnOnce(Self) -> Self>(self, plugin: P) -> Self {
         plugin(self)
     }
-    pub fn with_run_once<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
-        self.run_once_systems.get_or_insert_with(SystemSet::new).add_system(system, &self.world);
+    pub fn with_run_once<I, T: System + 'static>(
+        mut self,
+        system: impl IntoSystem<I, System = T>,
+    ) -> Self {
+        self.run_once_systems
+            .get_or_insert_with(SystemSet::new)
+            .add_system(system, &self.world);
         self
     }
-    pub fn with_system<I, T: System + 'static>(mut self, system: impl IntoSystem<I, System = T>) -> Self {
+    pub fn with_system<I, T: System + 'static>(
+        mut self,
+        system: impl IntoSystem<I, System = T>,
+    ) -> Self {
         let current_set = self.current_set();
         self.system_sets[current_set].add_system(system, &self.world);
 
         self
     }
-    pub fn with_staged_system<I, T: System + 'static>(mut self, stage: usize, system: impl IntoSystem<I, System = T>) -> Self {
+    pub fn with_staged_system<I, T: System + 'static>(
+        mut self,
+        stage: usize,
+        system: impl IntoSystem<I, System = T>,
+    ) -> Self {
         self.system_sets[stage].add_system(system, &self.world);
         self
     }

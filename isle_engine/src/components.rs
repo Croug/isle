@@ -39,7 +39,7 @@ impl Transform {
     pub fn scale(&self) -> Vec3 {
         self.scale
     }
-    
+
     pub fn dirty(&self) -> bool {
         self.dirty
     }
