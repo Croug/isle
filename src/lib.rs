@@ -2,7 +2,7 @@ pub extern crate isle_ecs;
 pub extern crate isle_engine;
 
 pub mod prelude {
-    pub use defaults::DefaultPlugins;
+    pub use crate::defaults::DefaultPlugins;
     pub use isle_ecs;
     pub use isle_ecs::prelude::*;
     pub use isle_engine;
