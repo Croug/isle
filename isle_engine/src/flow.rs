@@ -61,6 +61,8 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
             unsafe { &mut *self.world.get() }.apply_commands();
         });
 
+        let num_stages = self.system_sets.len();
+
         [
             stages::PRE_RUN,
             stages::RUN,
@@ -68,7 +70,7 @@ impl<S: Scheduler, E: Executor> Flow<S, E> {
             stages::PRE_RENDER,
             stages::RENDER,
             stages::POST_RENDER,
-        ].iter().for_each(|&stage| {
+        ].iter().copied().chain(6..num_stages).for_each(|stage| {
             self.run_schedule(stage);
         });
     }
