@@ -55,18 +55,42 @@ impl Material {
 
 #[derive(Component)]
 pub struct PointLight {
-    pub(crate) id: usize,
+    pub(crate) id: Option<usize>,
     pub(crate) color: Vec3,
     pub(crate) intensity: f32,
     pub(crate) dirty: bool,
 }
 
+impl PointLight {
+    pub fn new(color: Vec3, intensity: f32) -> Self {
+        PointLight {
+            id: None,
+            color,
+            intensity,
+            dirty: true,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct SpotLight {
-    pub(crate) id: usize,
+    pub(crate) id: Option<usize>,
     pub(crate) color: Vec3,
     pub(crate) intensity: f32,
     pub(crate) outer: Angle,
     pub(crate) inner: Angle,
     pub(crate) dirty: bool,
+}
+
+impl SpotLight {
+    pub fn new(color: Vec3, intensity: f32, outer: Angle, inner: Angle) -> Self {
+        SpotLight {
+            id: None,
+            color,
+            intensity,
+            outer,
+            inner,
+            dirty: true,
+        }
+    }
 }

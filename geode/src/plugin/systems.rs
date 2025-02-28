@@ -55,14 +55,36 @@ pub fn update_lights(
         .iter()
         .filter(|(light, transform)| light.dirty || transform.dirty())
         .for_each(|(light, transform)| {
-            lights.update_point_light(
-                light.id,
-                lighting::PointLight {
-                    position: transform.position(),
-                    color: light.color,
-                    intensity: light.intensity,
+            match light {
+                PointLight {
+                    id: Some(id),
+                    color,
+                    intensity,
+                    ..
+                } => {
+                    lights.update_point_light(
+                        *id,
+                        lighting::PointLight {
+                            position: transform.position(),
+                            color: *color,
+                            intensity: *intensity,
+                        },
+                    );
                 },
-            );
+                PointLight {
+                    id: None,
+                    color,
+                    intensity,
+                    ..
+                } => {
+                    let id = lights.add_point_light(lighting::PointLight {
+                        position: transform.position(),
+                        color: *color,
+                        intensity: *intensity,
+                    });
+                    light.id = Some(id);
+                }
+            }
 
             light.dirty = false;
         });
@@ -71,17 +93,57 @@ pub fn update_lights(
         .iter()
         .filter(|(light, transform)| light.dirty || transform.dirty())
         .for_each(|(light, transform)| {
-            lights.update_spot_light(
-                light.id,
-                lighting::SpotLight {
-                    position: transform.position(),
-                    color: light.color,
-                    intensity: light.intensity,
-                    direction: transform.orientation().forward(),
-                    outer: light.outer,
-                    inner: light.inner,
+            // lights.update_spot_light(
+            //     light.id,
+            //     lighting::SpotLight {
+            //         position: transform.position(),
+            //         color: light.color,
+            //         intensity: light.intensity,
+            //         direction: transform.orientation().forward(),
+            //         outer: light.outer,
+            //         inner: light.inner,
+            //     },
+            // );
+            match light {
+                SpotLight {
+                    id: Some(id),
+                    color,
+                    intensity,
+                    outer,
+                    inner,
+                    ..
+                } => {
+                    lights.update_spot_light(
+                        *id,
+                        lighting::SpotLight {
+                            position: transform.position(),
+                            color: *color,
+                            intensity: *intensity,
+                            direction: transform.orientation().forward(),
+                            outer: *outer,
+                            inner: *inner,
+                        },
+                    );
                 },
-            );
+                SpotLight {
+                    id: None,
+                    color,
+                    intensity,
+                    outer,
+                    inner,
+                    ..
+                } => {
+                    let id = lights.add_spot_light(lighting::SpotLight {
+                        position: transform.position(),
+                        color: *color,
+                        intensity: *intensity,
+                        direction: transform.orientation().forward(),
+                        outer: *outer,
+                        inner: *inner,
+                    });
+                    light.id = Some(id);
+                }
+            }
 
             light.dirty = false;
         });
