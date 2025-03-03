@@ -192,7 +192,7 @@ impl<'a, T: 'static> SystemParam for Option<Res<'a, T>> {
     fn from_world<'w>(
         world: &'w UnsafeCell<World>,
         _: &mut Self::State,
-        system_info: &str,
+        _: &str,
     ) -> Self::Item<'w> {
         let world = unsafe { &*world.get() };
         world.get_resource::<T>().map(Res)

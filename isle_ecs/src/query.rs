@@ -103,7 +103,6 @@ pub struct Without<T>(PhantomData<T>);
 pub trait QueryParam {
     type Item<'new>;
 
-    // fn from_world<'w>(entity: &Entity, world: &'w mut World) -> Self::Readonly<'w>;
     fn get_components(type_set: &mut impl TypeSet) -> ();
     fn from_entity<'w>(entity: Entity, world: &'w UnsafeCell<World>) -> Self::Item<'w>;
 }
