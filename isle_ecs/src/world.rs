@@ -52,6 +52,10 @@ impl World {
         self.resources.get(&TypeId::of::<T>())?.downcast_ref::<T>()
     }
 
+    pub fn get_resource_by_id(&self, type_id: &TypeId) -> Option<&dyn Any> {
+        self.resources.get(type_id).map(|r| r.as_ref())
+    }
+
     pub fn apply_commands(&mut self) {
         while let Ok(command) = self.command_receiver.try_recv() {
             command(self);
@@ -62,6 +66,10 @@ impl World {
         self.resources
             .get_many_unchecked_mut([&TypeId::of::<T>()])?[0]
             .downcast_mut::<T>()
+    }
+
+    pub fn get_resource_by_id_mut(&mut self, type_id: &TypeId) -> Option<&mut dyn Any> {
+        self.resources.get_mut(type_id).map(|r| r.as_mut())
     }
 
     pub fn store_component<T: Component>(&mut self, entity: Entity, component: T) {
@@ -102,6 +110,10 @@ impl World {
         self.entities.get(entity).unwrap().clone()
     }
 
+    pub fn get_components_by_id(&self, type_id: &TypeId) -> Option<Vec<&dyn Any>> {
+        Some(self.components.get(type_id)?.values().map(Box::as_ref).collect())
+    }
+
     /// # Safety
     /// Caller ensures that there are no other mutable references to the component
     pub unsafe fn get_component_mut<T: Component + 'static>(
@@ -112,6 +124,16 @@ impl World {
             .get_mut(&TypeId::of::<T>())?
             .get_many_unchecked_mut([entity])?[0]
             .downcast_mut::<T>()
+    }
+
+    pub fn get_components_by_id_mut(&mut self, type_id: &TypeId) -> Option<Vec<&mut dyn Any>> {
+        Some(
+            self.components
+                .get_mut(type_id)?
+                .values_mut()
+                .map(Box::as_mut)
+                .collect(),
+        )
     }
 }
 
