@@ -277,3 +277,25 @@ mod tests {
         assert_eq!(54u8, *val2);
     }
 }
+
+/// For isle engine internal use
+pub trait AssetManagerExt {
+    fn get_res_and_components(&mut self, resource_id: &TypeId, component_id: &TypeId) -> Option<(&mut dyn Any, Vec<&mut dyn Any>)>;
+}
+
+impl AssetManagerExt for World {
+    fn get_res_and_components(&mut self, resource_id: &TypeId, component_id: &TypeId) -> Option<(&mut dyn Any, Vec<&mut dyn Any>)> {
+        let World{
+            ref mut resources,
+            ref mut components,
+            ..
+        } = *self;
+
+        Some(
+            (
+                resources.get_mut(resource_id)?.as_mut(),
+                components.get_mut(component_id)?.values_mut().map(|v| v.as_mut()).collect()
+            )
+        )
+    }
+}

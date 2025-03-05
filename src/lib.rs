@@ -10,7 +10,7 @@ pub mod prelude {
 }
 
 pub mod defaults {
-    use isle_engine::flow::FlowBuilder;
+    use isle_engine::{asset::AssetManager, flow::FlowBuilder};
 
     type Scheduler = isle_ecs::schedule::Scheduler;
     type Executor = isle_ecs::executor::Executor;
@@ -33,8 +33,8 @@ pub mod defaults {
     impl DefaultPlugins for isle_engine::flow::FlowBuilder<Scheduler, Executor> {
         fn with_default_plugins(mut self) -> Self {
             self = self.with_plugin(isle_engine::plugin::default_plugins);
-
             self = renderer(self);
+            self = self.with_hook(AssetManager::default());
 
             self
         }
