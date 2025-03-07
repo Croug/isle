@@ -34,7 +34,7 @@ pub mod defaults {
         fn with_default_plugins(mut self) -> Self {
             self = self.with_plugin(isle_engine::plugin::default_plugins);
             self = renderer(self);
-            self = self.with_hook(AssetManager::default());
+            self = self.with_hook(AssetManager);
 
             self
         }

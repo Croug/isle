@@ -56,27 +56,24 @@ impl<T: ProtocolHandler<Asset = A, Resource=R>, A: 'static, R: 'static> Protocol
     }
 }
 
-static HANDLERS: LazyLock<Mutex<FxHashMap<TypeId, Box<dyn ProtocolHandlerAny + Send + Sync>>>> = LazyLock::new(|| Mutex::default());
+pub static HANDLERS: LazyLock<Mutex<FxHashMap<TypeId, Box<dyn ProtocolHandlerAny + Send + Sync>>>> = LazyLock::new(|| Mutex::default());
 
-#[derive(Default)]
-pub struct AssetManager {
-    handlers: FxHashMap<TypeId, Box<dyn ProtocolHandlerAny>>,
-}
+pub struct AssetManager;
 
 impl AssetManager {
     pub fn register_handler<T: ProtocolHandler + Send + Sync + 'static>(handler: T) {
         let mut handlers = HANDLERS.lock().unwrap();
-        handlers.insert(TypeId::of::<T::Resource>(), Box::new(handler));
+        handlers.insert(TypeId::of::<T::Asset>(), Box::new(handler));
     }
 }
 
 impl<S: Scheduler, E: Executor> EngineHook<S,E> for AssetManager {
-    fn pre_run(&mut self, world: &mut World, scheduler: &mut S, executor: &mut E) {
-        self.handlers.iter().for_each(|(type_id, handler)| {
+    fn pre_render(&mut self, world: &mut World, _: &mut S, executor: &mut E) {
+        HANDLERS.lock().unwrap().iter().for_each(|(type_id, handler)| {
             let resource_type = handler.resource_type();
             let max_stage = handler.stages().len();
 
-            let Some((resource, mut components)) = world.get_res_and_components(&resource_type, &type_id) else {
+            let Some((resource, components)) = world.get_res_and_components(&resource_type, &type_id) else {
                 return;
             };
 
