@@ -218,6 +218,12 @@ impl<'a> Renderer<'a> {
         &self.lighting.bind_group_layout
     }
 
+    pub fn upload_geometry(&mut self, geometry_id: usize) {
+        let device = &self.device;
+        let geometry = &mut self.geometries[geometry_id];
+        geometry.load_to_gpu(device);
+    }
+
     pub fn resize(&mut self, new_size: Vec2) {
         if new_size.0 > 0. && new_size.0 > 0. {
             self.size = new_size;

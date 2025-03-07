@@ -1,9 +1,5 @@
 use isle_engine::{
-    executor::Executor,
-    flow::{stages, FlowBuilder},
-    plugin::EngineHook,
-    schedule::Scheduler,
-    window::ReconfigureSurface,
+    asset::AssetManager, executor::Executor, flow::{stages, FlowBuilder}, plugin::EngineHook, schedule::Scheduler, window::ReconfigureSurface
 };
 use isle_event::{EventReader, EventWriter};
 use wgpu::SurfaceError;
@@ -12,6 +8,7 @@ use crate::renderer::Renderer;
 
 pub mod components;
 pub mod systems;
+pub mod protocol;
 
 #[derive(Default)]
 struct RenderPlugin {
@@ -67,6 +64,7 @@ impl<S: Scheduler, E: Executor> EngineHook<S, E> for RenderPlugin {
 }
 
 pub fn geode_plugin<S: Scheduler, E: Executor>(mut flow: FlowBuilder<S, E>) -> FlowBuilder<S, E> {
+    AssetManager::register_handler(protocol::GeometryHandler::default());
     flow = flow.with_run_once(systems::setup);
 
     flow = flow.with_staged_system(stages::POST_RUN, systems::update_cameras);

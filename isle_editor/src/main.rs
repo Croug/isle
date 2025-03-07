@@ -69,8 +69,8 @@ fn setup(renderer: Option<ResMut<Renderer>>, mut flow: WorldCommand, mut run: Re
     flow.add_component(camera, Camera::new(&CameraCreationSettings::default()));
 
     let cube_size = Vec3(100.0, 100.0, 100.0);
-    let mut cube = Geometry::cube(cube_size);
-    cube.load_to_gpu(renderer.device());
+    let cube = Geometry::cube(cube_size);
+    // cube.load_to_gpu(renderer.device());
     let cube = renderer.add_geometry(cube);
 
     let mut texture = Texture::new(&PathBuf::from_str("assets/happy_tree.png").unwrap());
