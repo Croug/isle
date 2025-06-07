@@ -1,8 +1,5 @@
 use std::{
-    f32::consts::PI,
-    path::PathBuf,
-    str::FromStr,
-    time::{Instant, UNIX_EPOCH},
+    f32::consts::PI, io::Write, path::PathBuf, str::FromStr, time::{Instant, UNIX_EPOCH}
 };
 
 use geode::{
@@ -145,7 +142,7 @@ fn update_light(look_at: Res<Vec3>, query: Query<&mut Transform, With<SpotLight>
     light.set_rotation(Quaternion::look_at(&position, &look_at).into());
 }
 
-define_binding!(Quit, Key::Escape);
+define_binding!(Quit, Key::Escape | Button::East);
 
 define_binding!(Up, Key::Up | Key::W);
 define_binding!(Down, Key::Down | Key::S);
@@ -153,10 +150,10 @@ define_binding!(Left, Key::Left | Key::A);
 define_binding!(Right, Key::Right | Key::D);
 
 define_axis_binding!(
-    LeftRight,
+    RightLeft,
     Axis::LeftStickX | Axis::RightStickX,
-    Left,
-    Right
+    Right,
+    Left
 );
 
 define_axis_binding!(
@@ -169,13 +166,13 @@ define_axis_binding!(
 const CAMERA_SPEED: f32 = 500.;
 
 fn quit_game(input: Input<Quit>) {
-    if(input.state()) {
+    if input.state() {
         todo!("graceful shutdown");
     }
 }
 
-fn move_light_target(tick: Tick, left_right: InputAxis<LeftRight>, up_down: InputAxis<UpDown>, mut look_at: ResMut<Vec3>) {
-    look_at.0 -= tick.delta() * CAMERA_SPEED * left_right.value();
+fn move_light_target(tick: Tick, left_right: InputAxis<RightLeft>, up_down: InputAxis<UpDown>, mut look_at: ResMut<Vec3>) {
+    look_at.0 += tick.delta() * CAMERA_SPEED * left_right.value();
     look_at.2 += tick.delta() * CAMERA_SPEED * up_down.value();
 }
 

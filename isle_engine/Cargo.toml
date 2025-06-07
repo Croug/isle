@@ -6,12 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-isle_engine_macros ={ path = "macros" }
+isle_engine_macros = { path = "macros" }
 isle_ecs = { path = "../isle_ecs" }
 isle_math = { path = "../isle_math" }
 isle_event ={ path = "../isle_event" }
 rustc-hash = "2.0.0"
 winit = "0.30.5"
+gilrs = "0.11.0"
 
 [features]
 default = []

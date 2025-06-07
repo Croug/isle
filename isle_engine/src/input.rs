@@ -1,12 +1,14 @@
 use std::hash::Hash;
 
+pub use isle_engine_macros::{define_axis_binding, define_binding};
+pub use gilrs::{Axis as GilrsAxis, Button as GilrsButton};
+
+use gilrs::{Gilrs, EventType as GilrsEventType};
 use isle_ecs::ecs::ResMut;
 use rustc_hash::{FxHashMap, FxHashSet};
-
-pub use isle_engine_macros::{define_axis_binding, define_binding};
 use winit::keyboard::KeyCode;
 
-use crate::{params::Event, window::KeyboardEvent};
+use crate::{params::{Event, EventTrigger}, window::KeyboardEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -126,7 +128,7 @@ pub enum Key {
     Pause,
     Menu,
 
-    Unknown,
+    Unknown
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -139,6 +141,14 @@ pub enum Axis {
 
     LeftTrigger,
     RightTrigger,
+
+    MouseX,
+    MouseY,
+
+    PadX,
+    PadY,
+
+    Unknown
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -162,6 +172,15 @@ pub enum Button {
     Start,
     Select,
     Menu,
+
+    Unknown
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InputKind {
+    Key(Key),
+    Axis(Axis),
+    Button(Button),
 }
 
 pub trait Mapping: Sized {
@@ -211,6 +230,10 @@ impl InputMap {
     }
 
     pub fn set_key(&mut self, key: Key, state: bool) {
+        if key == Key::Unknown {
+            return;
+        }
+
         if state {
             self.keys.insert(key);
         } else {
@@ -219,6 +242,10 @@ impl InputMap {
     }
 
     pub fn set_button(&mut self, button: Button, state: bool) {
+        if button == Button::Unknown {
+            return;
+        }
+
         if state {
             self.buttons.insert(button);
         } else {
@@ -227,7 +254,19 @@ impl InputMap {
     }
 
     pub fn set_axis(&mut self, axis: Axis, value: f32) {
+        if axis == Axis::Unknown {
+            return;
+        }
+
         self.axes.insert(axis, value);
+    }
+
+    pub fn set_input(&mut self, input: InputKind, value: f32) {
+        match input {
+            InputKind::Key(key) => self.set_key(key, value > 0.0),
+            InputKind::Axis(axis) => self.set_axis(axis, value),
+            InputKind::Button(button) => self.set_button(button, value > 0.0),
+        }
     }
 
     pub fn get_key(&self, key: Key) -> bool {
@@ -273,6 +312,12 @@ impl InputMap {
         } else {
             fallback
         }
+    }
+}
+
+impl Into<InputKind> for Key {
+    fn into(self) -> InputKind {
+        InputKind::Key(self)
     }
 }
 
@@ -393,8 +438,57 @@ impl From<KeyCode> for Key {
     }
 }
 
-pub fn update_input(mut event: Event<KeyboardEvent>, mut input_map: ResMut<InputMap>) {
+impl From<GilrsAxis> for InputKind {
+    fn from(axis: gilrs::Axis) -> Self {
+        match axis {
+            GilrsAxis::LeftStickX => InputKind::Axis(Axis::LeftStickX),
+            GilrsAxis::LeftStickY => InputKind::Axis(Axis::LeftStickY),
+            GilrsAxis::RightStickX => InputKind::Axis(Axis::RightStickX),
+            GilrsAxis::RightStickY => InputKind::Axis(Axis::RightStickY),
+            GilrsAxis::LeftZ => InputKind::Axis(Axis::LeftTrigger),
+            GilrsAxis::RightZ => InputKind::Axis(Axis::RightTrigger),
+            GilrsAxis::DPadX => InputKind::Axis(Axis::PadX),
+            GilrsAxis::DPadY => InputKind::Axis(Axis::PadY),
+            _ => InputKind::Axis(Axis::Unknown),
+        }
+    }
+}
+
+impl From<GilrsButton> for InputKind {
+    fn from(button: gilrs::Button) -> Self {
+        match button {
+            GilrsButton::North => InputKind::Button(Button::North),
+            GilrsButton::East => InputKind::Button(Button::East),
+            GilrsButton::South => InputKind::Button(Button::South),
+            GilrsButton::West => InputKind::Button(Button::West),
+            GilrsButton::DPadUp => InputKind::Button(Button::PadUp),
+            GilrsButton::DPadRight => InputKind::Button(Button::PadRight),
+            GilrsButton::DPadDown => InputKind::Button(Button::PadDown),
+            GilrsButton::DPadLeft => InputKind::Button(Button::PadLeft),
+            GilrsButton::LeftTrigger => InputKind::Button(Button::LeftBumper),
+            GilrsButton::RightTrigger => InputKind::Button(Button::RightBumper),
+            GilrsButton::LeftTrigger2 => InputKind::Axis(Axis::LeftTrigger),
+            GilrsButton::RightTrigger2 => InputKind::Axis(Axis::RightTrigger),
+            GilrsButton::C => InputKind::Button(Button::LeftStick),
+            GilrsButton::Z => InputKind::Button(Button::RightStick),
+            GilrsButton::Start => InputKind::Button(Button::Start),
+            GilrsButton::Select => InputKind::Button(Button::Select),
+            GilrsButton::Mode => InputKind::Button(Button::Menu),
+            _ => InputKind::Button(Button::Unknown),
+        }
+    }
+}
+
+pub fn update_input(mut event: Event<KeyboardEvent>, mut gilrs: ResMut<Gilrs>, mut input_map: ResMut<InputMap>) {
     event.iter().for_each(|event| {
         input_map.set_key(event.key, event.state);
     });
+    
+    while let Some(gilrs_event) = gilrs.next_event() {
+        match gilrs_event.event {
+            GilrsEventType::AxisChanged(axis, value, _code) => input_map.set_input(axis.into(), value),
+            GilrsEventType::ButtonChanged(button, value, _code) => input_map.set_input(button.into(), value),
+            _ => (),
+        }
+    }
 }

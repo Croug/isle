@@ -283,8 +283,9 @@ impl<S: Scheduler, E: Executor> FlowBuilder<S, E> {
     fn current_set(&self) -> usize {
         self.system_sets.len() - 1
     }
-    pub fn build(self) -> Flow<S, E> {
+    pub fn build(mut self) -> Flow<S, E> {
         if let (Some(scheduler), Some(executor)) = (self.scheduler, self.executor) {
+            self.world.get_mut().store_resource(gilrs::Gilrs::new().unwrap());
             Flow {
                 world: self.world,
                 system_sets: self.system_sets,
