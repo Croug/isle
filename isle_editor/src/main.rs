@@ -27,8 +27,8 @@ struct MyComponentOne(usize);
 struct MyComponentTwo;
 
 #[derive(Component, Debug)]
-
 struct MyComponentThree;
+
 #[derive(Component, Debug)]
 struct MyComponentFour;
 
@@ -41,6 +41,7 @@ fn main() {
     flow.push_system(setup);
     flow.push_system(update_light);
     flow.push_system(move_light_target);
+    flow.push_system(quit_game);
 
     flow.run().unwrap();
 }
@@ -144,16 +145,38 @@ fn update_light(look_at: Res<Vec3>, query: Query<&mut Transform, With<SpotLight>
     light.set_rotation(Quaternion::look_at(&position, &look_at).into());
 }
 
+define_binding!(Quit, Key::Escape);
+
 define_binding!(Up, Key::Up | Key::W);
 define_binding!(Down, Key::Down | Key::S);
 define_binding!(Left, Key::Left | Key::A);
 define_binding!(Right, Key::Right | Key::D);
 
+define_axis_binding!(
+    LeftRight,
+    Axis::LeftStickX | Axis::RightStickX,
+    Left,
+    Right
+);
+
+define_axis_binding!(
+    UpDown,
+    Axis::LeftStickY | Axis::RightStickY,
+    Up,
+    Down
+);
+
 const CAMERA_SPEED: f32 = 500.;
 
-fn move_light_target(tick: Tick, up: Input<Up>, down: Input<Down>, left: Input<Left>, right: Input<Right>, mut look_at: ResMut<Vec3>) {
-    look_at.2 += tick.delta() * CAMERA_SPEED * (up.state() as i32 - down.state() as i32) as f32;
-    look_at.0 += tick.delta() * CAMERA_SPEED * (right.state() as i32 - left.state() as i32) as f32;
+fn quit_game(input: Input<Quit>) {
+    if(input.state()) {
+        todo!("graceful shutdown");
+    }
+}
+
+fn move_light_target(tick: Tick, left_right: InputAxis<LeftRight>, up_down: InputAxis<UpDown>, mut look_at: ResMut<Vec3>) {
+    look_at.0 -= tick.delta() * CAMERA_SPEED * left_right.value();
+    look_at.2 += tick.delta() * CAMERA_SPEED * up_down.value();
 }
 
 fn main_old() {
