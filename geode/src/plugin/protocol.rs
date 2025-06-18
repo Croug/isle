@@ -24,7 +24,7 @@ impl<'a> ProtocolHandler for GeometryHandler<'a> {
 
     type Resource = Renderer<'a>;
 
-    const MIME_TYPES: &'static [&'static str] = &["application/obj"];
+    const FILE_EXTENSIONS: &'static [&'static str] = &["OBJ"];
 
     const STAGES: &'static [isle_engine::asset::StageInfo] = &[
         StageInfo {
@@ -37,7 +37,7 @@ impl<'a> ProtocolHandler for GeometryHandler<'a> {
         },
     ];
 
-    fn init_asset(resource: &mut Self::Resource, source: &std::path::Path) -> asset::Result<()> {
+    fn init_asset(resource: &mut Self::Resource, source: &std::path::Path) -> asset::Result<f32> {
         todo!()
     }
 

@@ -15,19 +15,19 @@ pub struct StageInfo {
 pub trait ProtocolHandler {
     type Asset;
     type Resource;
-    const MIME_TYPES: &'static [&'static str];
+    const FILE_EXTENSIONS: &'static [&'static str];
     const STAGES: &'static [StageInfo];
 
-    fn init_asset(resource: &mut Self::Resource, source: &Path) -> Result<()>;
+    fn init_asset(resource: &mut Self::Resource, source: &Path) -> Result<f32>;
     fn load_asset(resource: &mut Self::Resource, asset: &Self::Asset, stage: usize) -> Result<()>;
 }
 
 pub trait ProtocolHandlerAny {
     fn resource_type(&self) -> TypeId;
     fn asset_type(&self) -> TypeId;
-    fn mime_types(&self) -> &'static [&'static str];
+    fn file_extensions(&self) -> &'static [&'static str];
     fn stages(&self) -> &'static [StageInfo];
-    fn init_asset(&self, resource: &mut dyn Any, source: &Path) -> Result<()>;
+    fn init_asset(&self, resource: &mut dyn Any, source: &Path) -> Result<f32>;
     fn load_asset(&self, resource: &mut dyn Any, asset: &dyn Any, stage: usize) -> Result<()>;
 }
 
@@ -39,13 +39,13 @@ impl<T: ProtocolHandler<Asset = A, Resource=R>, A: 'static, R: 'static> Protocol
     fn asset_type(&self) -> TypeId {
         TypeId::of::<A>()
     }
-    fn mime_types(&self) -> &'static [&'static str] {
-        T::MIME_TYPES
+    fn file_extensions(&self) -> &'static [&'static str] {
+        T::FILE_EXTENSIONS
     }
     fn stages(&self) -> &'static [StageInfo] {
         T::STAGES
     }
-    fn init_asset(&self, resource: &mut dyn Any, source: &Path) -> Result<()> {
+    fn init_asset(&self, resource: &mut dyn Any, source: &Path) -> Result<f32> {
         let resource = resource.downcast_mut().unwrap();
         T::init_asset(resource, source)
     }
