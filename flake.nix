@@ -31,6 +31,7 @@
             pkgs.pre-commit
             pkgs.rustPackages.clippy
             pkgs.pkg-config    # so build.rs can call pkg-config
+            pkgs.rust-analyzer
           ] ++ runtimeLibs;
 
           LD_LIBRARY_PATH = libPath;
